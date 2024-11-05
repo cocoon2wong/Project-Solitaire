@@ -1,0 +1,25 @@
+# data and logs
+logs*
+*logs
+
+# vscode
+.vscode
+.vscode*
+
+# weight files
+*.npy
+
+# temp files
+# .*
+.test
+.DS_Store
+__pycache__
+*.pyc
+
+# test results
+weights
+summary
+*temp
+temp*
+test*
+*test
