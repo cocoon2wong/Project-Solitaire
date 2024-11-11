@@ -2,7 +2,7 @@
 @Author: Conghao Wong
 @Date: 2024-11-05 15:39:57
 @LastEditors: Conghao Wong
-@LastEditTime: 2024-11-11 09:50:55
+@LastEditTime: 2024-11-11 20:41:30
 @Github: https://cocoon2wong.github.io
 @Copyright 2024 Conghao Wong, All Rights Reserved.
 """
@@ -66,20 +66,24 @@ class PlaygroundArgs(EmptyArgs):
         The video clip to run this playground.
         """
         return self._arg('clip', 'zara1', argtype=TEMPORARY)
-    
+
     @property
     def do_not_draw_neighbors(self) -> int:
         """
         Choose whether to draw neighboring-agents' trajectories.
         """
         return self._arg('do_not_draw_neighbors', 0, argtype=TEMPORARY)
-    
+
     @property
     def save_full_outputs(self) -> int:
         """
         Choose whether to save all outputs as images.
         """
         return self._arg('save_full_outputs', 0, argtype=TEMPORARY)
+
+    @property
+    def compute_social_diff(self) -> int:
+        return self._arg('compute_social_diff', 0, argtype=TEMPORARY)
 
 
 def args(model_path: str):

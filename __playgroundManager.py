@@ -2,16 +2,18 @@
 @Author: Conghao Wong
 @Date: 2024-11-05 15:47:04
 @LastEditors: Conghao Wong
-@LastEditTime: 2024-11-11 10:02:03
+@LastEditTime: 2024-11-11 20:40:42
 @Github: https://cocoon2wong.github.io
 @Copyright 2024 Conghao Wong, All Rights Reserved.
 """
 
+import os
 import tkinter as tk
 from copy import copy, deepcopy
 from tkinter import filedialog
 from typing import Any
 
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
@@ -22,12 +24,20 @@ from qpid.base import BaseManager
 from qpid.constant import INPUT_TYPES
 from qpid.dataset.agent_based import Agent
 from qpid.training import Structure
-from qpid.utils import get_mask, move_to_device
+from qpid.utils import dir_check, get_mask, move_to_device
 
 from .__args import PlaygroundArgs, args
-from .__constant import DRAW_MODE_PLT, DRAW_MODE_QPID, DRAW_MODE_QPID_PHYSICAL
+from .__constant import (DRAW_MODE_PLT, DRAW_MODE_QPID,
+                         DRAW_MODE_QPID_PHYSICAL, LOG_PATH)
 from .__interface import InterfaceManager
 from .__visManager import VisManager
+
+# Configs for computing and drawing the social matrix
+COLOR_HIGH = np.array([0xf9, 0xcf, 0x62])
+COLOR_LOW = np.array([0x74, 0x8b, 0xe2])
+
+RADIUS = 2.0
+HALF_POINTS = 6
 
 
 class PlaygroundManager(BaseManager):
@@ -76,6 +86,15 @@ class PlaygroundManager(BaseManager):
             "<Button-1>", lambda e: self.run(with_manual_neighbor=False))
         self.interface_mgr.button_load_model.bind(
             "<Button-1>", lambda e: self.choose_weights())
+
+        if self.pg_args.compute_social_diff:
+            self.interface_mgr.button_load_model["text"] = 'Compute Social Heatmap'
+            self.interface_mgr.button_load_model.bind(
+                "<Button-1>", lambda e: self.compute_social_matrix())
+
+            self.interface_mgr.button_clear_manual_inputs["text"] = 'Show Social Heatmap'
+            self.interface_mgr.button_clear_manual_inputs.bind(
+                "<Button-1>", lambda e: self.show_social_matrix())
 
     @property
     def agent_index(self) -> int:
@@ -178,13 +197,14 @@ class PlaygroundManager(BaseManager):
         if not self.vis_mgr:
             self.create_vis_manager()
 
-    def run(self, with_manual_neighbor=False):
+    def run(self, with_manual_neighbor=False, save_results=True):
 
         if not self.input_and_gt or not self.t or not len(self.agents) or not self.vis_mgr:
             raise ValueError
 
         # Gather model inputs
         inputs = [i[self.agent_index][None] for i in self.input_and_gt[0]]
+        inputs_original = deepcopy(inputs)
 
         # Read the position of the manual neighbor
         extra_pos = []
@@ -200,11 +220,14 @@ class PlaygroundManager(BaseManager):
                                 f'Illegal position `{_v}`!', level='error')
 
             if len(extra_pos) == 2 * self.pg_args.points:
-                self.log('Start running with an addition neighbor' +
-                         f'from {extra_pos[0]} to {extra_pos[1]}...')
+                if save_results:
+                    self.log('Start running with an addition neighbor' +
+                             f'from {extra_pos[0]} to {extra_pos[1]}...')
             else:
                 extra_pos = []
-                self.log('Start running...')
+                with_manual_neighbor = False
+                if save_results:
+                    self.log('Start running...')
 
         # Prepare manual neighbors (if needed)
         if len(m := extra_pos):
@@ -221,11 +244,51 @@ class PlaygroundManager(BaseManager):
 
         # Forward the model
         with torch.no_grad():
-            outputs = self.t.model.implement(inputs, training=None)
+
+            # Compute the social diff value
+            if self.pg_args.compute_social_diff and with_manual_neighbor:
+                repeats = 100
+
+                for _ii, _item in enumerate(inputs_original):
+                    inputs_original[_ii] = torch.repeat_interleave(
+                        _item, repeats, dim=0)
+                outputs_original = self.t.model.implement(
+                    inputs_original, training=None)
+                outputs_original[0] = torch.mean(
+                    outputs_original[0], dim=0, keepdim=True)
+
+                for _ii, _item in enumerate(inputs):
+                    inputs[_ii] = torch.repeat_interleave(
+                        _item, repeats, dim=0)
+                outputs = self.t.model.implement(inputs, training=None)
+                outputs[0] = torch.mean(outputs[0], dim=0, keepdim=True)
+
+                max_mod = torch.abs(outputs[0] - outputs_original[0])
+                max_mod = torch.mean(max_mod, dim=[0, 1])
+                max_mod = torch.max(max_mod)
+
+                x_current = self.tk_vars[f"px{self.pg_args.points-1}"].get()
+                y_current = self.tk_vars[f"py{self.pg_args.points-1}"].get()
+
+                if save_results:
+                    self.log(
+                        f'Max socially modification: `{max_mod}`, neighbor at `{x_current}`, `{y_current}`.')
+                else:
+                    return x_current, y_current, max_mod
+
+            else:
+                outputs = self.t.model.implement(inputs, training=None)
 
         # Save model inputs/outputs
         self.inputs = inputs
         self.outputs = move_to_device(outputs, self.t.device_cpu)
+
+        # Print model outputs
+        time = int(1000 * self.t.model.inference_times[-1])
+        self.log(f'Running done. Time cost = {time} ms.')
+
+        if not save_results:
+            return None
 
         # Save results into an `Agent` object
         _agent = Agent().load_data(
@@ -252,10 +315,7 @@ class PlaygroundManager(BaseManager):
 
         # Destory the temp agent
         del _agent
-
-        # Print model outputs
-        time = int(1000 * self.t.model.inference_times[-1])
-        self.log(f'Running done. Time cost = {time} ms.')
+        return None
 
     def get_random_id(self):
         try:
@@ -310,6 +370,69 @@ class PlaygroundManager(BaseManager):
         nei_count = get_neighbor_count(_nei)
         _nei[0, nei_count] = traj - obs.numpy()[0, -1:, :]
         return torch.from_numpy(_nei)
+
+    def compute_social_matrix(self, delta=RADIUS,
+                              x_delta=HALF_POINTS, y_delta=HALF_POINTS):
+
+        tk_vars_copy = {}
+        done_list = []
+        for _key, _value in self.tk_vars.items():
+            if _key.startswith('p') and len(_value.get()):
+                tk_vars_copy[_key] = float(_value.get())
+
+        results = []
+        for _x in range(-x_delta, x_delta):
+            for _j in range(self.pg_args.points):
+                _v = tk_vars_copy[f'px{_j}']
+                self.tk_vars[f'px{_j}'].set(str((__x := _v + delta * _x)))
+
+            for _y in range(-y_delta, y_delta):
+                for _j in range(self.pg_args.points):
+                    _v = tk_vars_copy[f'py{_j}']
+                    self.tk_vars[f'py{_j}'].set(str((__y := _v + delta * _y)))
+
+                    if not (p := (int(__x*10000)/10000, int(__y*10000)/10000)) in done_list:
+                        done_list.append(p)
+                    else:
+                        continue
+
+                    v = self.run(with_manual_neighbor=True, save_results=False)
+                    results.append(
+                        [float(v[0]), float(v[1]), float(v[2].numpy())])
+
+        save_path = os.path.join(
+            dir_check(os.path.dirname(LOG_PATH)), 'social_matrix.txt')
+        np.savetxt(save_path, np.array(results))
+        self.log(f'Social matrix saved at `{save_path}`.')
+        self.show_social_matrix()
+
+    def show_social_matrix(self):
+        data_path = os.path.join(
+            dir_check(os.path.dirname(LOG_PATH)), 'social_matrix.txt')
+
+        data = np.loadtxt(data_path)
+
+        plt.close('Social Matrix')
+        plt.figure('Social Matrix')
+
+        v_min = data.T[-1].min()
+        v_max = data.T[-1].max()
+
+        for _x, _y, _v in data:
+
+            _radius = RADIUS
+            _color = COLOR_LOW + (COLOR_HIGH - COLOR_LOW) * \
+                ((_v - v_min)/(v_max - v_min))
+            _pos = (_x, _y)
+
+            _circle = plt.Circle(_pos, _radius,
+                                 fill=True, color=list(_color/255),
+                                 alpha=0.6)
+            plt.gca().add_artist(_circle)
+            plt.plot(_x, _y)
+
+        plt.axis('equal')
+        plt.show()
 
 
 def get_neighbor_count(nei_obs: torch.Tensor | np.ndarray):
