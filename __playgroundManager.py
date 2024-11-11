@@ -289,7 +289,7 @@ class PlaygroundManager(BaseManager):
 
         elif len(position) == 6:
             xp = np.array([0, steps//2, steps-1])
-            fp = np.array(position).reshape([3, 2]).T
+            fp = np.array(position).reshape([2, 3]).T
             x = np.arange(steps)
 
             from qpid.model.layers.interpolation import \
