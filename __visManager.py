@@ -2,7 +2,7 @@
 @Author: Conghao Wong
 @Date: 2024-11-05 15:48:10
 @LastEditors: Conghao Wong
-@LastEditTime: 2024-11-05 20:45:09
+@LastEditTime: 2024-11-11 10:24:51
 @Github: https://cocoon2wong.github.io
 @Copyright 2024 Conghao Wong, All Rights Reserved.
 """
@@ -102,12 +102,17 @@ class VisManager(BaseManager):
         else:
             raise ValueError(m)
 
+        if self.pg_args.save_full_outputs:
+            _dir = os.path.dirname(img_save_path)
+            _file = f'_{m}_{self.pg_args.dataset}_{self.pg_args.clip}_{agent.loss_weight}.png'
+            img_save_path = os.path.join(_dir, _file)
+
         do(agent=agent,
-            frames=[agent.frames[model_args.obs_frames-1]],
-            save_name=img_save_path,
-            save_name_with_frame=False,
-            save_as_images=True,
-            draw_with_plt=draw_with_plt)
+           frames=[agent.frames[model_args.obs_frames-1]],
+           save_name=img_save_path,
+           save_name_with_frame=False,
+           save_as_images=True,
+           draw_with_plt=draw_with_plt)
 
         if need_resize:
             import cv2

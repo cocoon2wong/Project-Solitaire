@@ -2,7 +2,7 @@
 @Author: Conghao Wong
 @Date: 2024-11-05 15:47:04
 @LastEditors: Conghao Wong
-@LastEditTime: 2024-11-05 20:40:31
+@LastEditTime: 2024-11-11 10:02:03
 @Github: https://cocoon2wong.github.io
 @Copyright 2024 Conghao Wong, All Rights Reserved.
 """
@@ -234,9 +234,18 @@ class PlaygroundManager(BaseManager):
         _agent.manager = self.t.agent_manager
 
         _agent.write_pred(self.outputs[0].numpy()[0])
-        _agent.traj_neighbor = self.t.model.get_input(
-            self.inputs, INPUT_TYPES.NEIGHBOR_TRAJ).numpy()[0]
-        _agent.neighbor_number = get_neighbor_count(_agent.traj_neighbor)
+
+        if self.pg_args.do_not_draw_neighbors:
+            _agent.traj_neighbor = np.zeros_like(_agent.traj_neighbor)
+            _agent.neighbor_number = 1
+
+        else:
+            _agent.traj_neighbor = self.t.model.get_input(
+                self.inputs, INPUT_TYPES.NEIGHBOR_TRAJ).numpy()[0]
+            _agent.neighbor_number = get_neighbor_count(_agent.traj_neighbor)
+
+        # Store agent index (this variable will be not used when visualizing)
+        _agent.loss_weight = self.agent_index
 
         # Draw results
         self.vis_mgr.draw(self.t.args, _agent)
