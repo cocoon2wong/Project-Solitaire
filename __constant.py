@@ -13,7 +13,7 @@ MAX_HEIGHT = 480
 MAX_WIDTH = 640
 
 DRAW_MODE_PLT = 'PLT'
-DRAW_MODE_QPID = 'Interactive (SC)'
+DRAW_MODE_QPID = 'Manual Neighbor'
 DRAW_MODE_QPID_PHYSICAL = 'Interactive (PC)'
 
 LOG_PATH = './temp_files/playground/run.log'
@@ -21,7 +21,8 @@ TK_BORDER_WIDTH = 5
 TK_TITLE_STYLE = dict(font=('', 24, 'bold'),
                       height=2)
 
-DRAW_MODES_ALL = [DRAW_MODE_QPID, DRAW_MODE_PLT, DRAW_MODE_QPID_PHYSICAL]
+# DRAW_MODES_ALL = [DRAW_MODE_QPID, DRAW_MODE_PLT, DRAW_MODE_QPID_PHYSICAL]
+DRAW_MODES_ALL = [DRAW_MODE_QPID, DRAW_MODE_PLT]
 
 TEMP_IMG_PATH = './temp_files/playground/fig.png'
 TEMP_SEG_MAP_PATH = './temp_files/playground/seg.png'
