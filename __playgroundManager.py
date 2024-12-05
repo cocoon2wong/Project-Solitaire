@@ -2,7 +2,7 @@
 @Author: Conghao Wong
 @Date: 2024-11-05 15:47:04
 @LastEditors: Conghao Wong
-@LastEditTime: 2024-11-11 20:40:42
+@LastEditTime: 2024-12-05 15:08:49
 @Github: https://cocoon2wong.github.io
 @Copyright 2024 Conghao Wong, All Rights Reserved.
 """
@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
-from main import main
+import qpid
 from qpid.__root import BaseObject
 from qpid.args import Args
 from qpid.base import BaseManager
@@ -154,7 +154,7 @@ class PlaygroundManager(BaseManager):
                               '--force_clip', self.pg_args.clip,
                               '--force_split', _split]
 
-            t = main(terminal_args, run_train_or_test=False)
+            t = qpid.entrance(terminal_args, train_or_test=False)
             self.t = t
 
             # Init models and datasets
