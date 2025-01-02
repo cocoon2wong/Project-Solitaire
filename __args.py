@@ -2,7 +2,7 @@
 @Author: Conghao Wong
 @Date: 2024-11-05 15:39:57
 @LastEditors: Conghao Wong
-@LastEditTime: 2024-11-11 20:41:30
+@LastEditTime: 2025-01-02 16:22:13
 @Github: https://cocoon2wong.github.io
 @Copyright 2024 Conghao Wong, All Rights Reserved.
 """
@@ -46,13 +46,6 @@ class PlaygroundArgs(EmptyArgs):
         return self._arg('physical_manual_neighbor_mode', 1.0, TEMPORARY)
 
     @property
-    def weight(self) -> str:
-        """
-        The default weights to load.
-        """
-        return self._arg('weight', 'static', TEMPORARY, short_name='w')
-
-    @property
     def dataset(self) -> str:
         """
         The dataset to run this playground.
@@ -87,6 +80,14 @@ class PlaygroundArgs(EmptyArgs):
 
 
 def args(model_path: str):
+    # Obtain all other terminal args
+    other_args = sys.argv
+
+    # Remove the original `load` args
+    for a in ['-l', '--load']:
+        if a in other_args:
+            other_args.remove(a)
+
     return ['main.py',
             '--model', 'MKII',
             '--loads', f'{model_path},speed',

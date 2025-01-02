@@ -2,7 +2,7 @@
 @Author: Conghao Wong
 @Date: 2024-11-05 15:47:04
 @LastEditors: Conghao Wong
-@LastEditTime: 2024-12-05 15:08:49
+@LastEditTime: 2025-01-02 16:19:11
 @Github: https://cocoon2wong.github.io
 @Copyright 2024 Conghao Wong, All Rights Reserved.
 """
@@ -51,7 +51,7 @@ class PlaygroundManager(BaseManager):
         self.root = tk.Tk()
         self.tk_vars: dict[str, tk.StringVar] = {}
         self.tk_vars['agent_id'] = tk.StringVar(value='0')
-        self.tk_vars['model_path'] = tk.StringVar(value=self.pg_args.weight)
+        self.tk_vars['model_path'] = tk.StringVar(value=self.args.load)
 
         for p in range(self.pg_args.points):
             for i in ['x', 'y']:
