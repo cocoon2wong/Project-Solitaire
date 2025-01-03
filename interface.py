@@ -2,7 +2,7 @@
 @Author: Conghao Wong
 @Date: 2025-01-02 20:39:07
 @LastEditors: Conghao Wong
-@LastEditTime: 2025-01-03 15:36:05
+@LastEditTime: 2025-01-03 16:22:32
 @Github: https://cocoon2wong.github.io
 @Copyright 2025 Conghao Wong, All Rights Reserved.
 """
@@ -63,8 +63,6 @@ class MainWindow(QMainWindow, Ui_MainWindow, BaseManager):
         self.pushButton_changedataset.clicked.connect(lambda: (self.p.load(self.p.vars['model_path']),
                                                                self.lineEdit_agentid.setText('0')))
 
-        self.pushButton_3.clicked.connect(lambda: print(
-            self.p.vars['Dataset'], self.p.vars['Split'], self.p.vars['Clip']))
 
         self.pushButton_modechange.clicked.connect(lambda e: (self.p.vis_mgr.switch_draw_mode(),
                                                               self.label_mode.setText(self.p.vis_mgr.draw_mode)))

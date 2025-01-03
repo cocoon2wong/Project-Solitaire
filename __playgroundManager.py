@@ -2,19 +2,19 @@
 @Author: Conghao Wong
 @Date: 2024-11-05 15:47:04
 @LastEditors: Conghao Wong
-@LastEditTime: 2025-01-03 15:27:47
+@LastEditTime: 2025-01-03 16:54:37
 @Github: https://cocoon2wong.github.io
 @Copyright 2024 Conghao Wong, All Rights Reserved.
 """
 
 import os
 from copy import copy, deepcopy
-from tkinter import filedialog
 from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
+from PyQt6.QtWidgets import QFileDialog
 
 import qpid
 from qpid.args import Args
@@ -123,7 +123,7 @@ class PlaygroundManager(BaseManager):
         self.vis_mgr = VisManager(manager=self)
 
     def choose_weights(self):
-        path = filedialog.askdirectory(initialdir='./')
+        path = QFileDialog.getExistingDirectory(None, "Choose Weights", "")
         self.load(path)
         self.update_var('model_path', path)
 
