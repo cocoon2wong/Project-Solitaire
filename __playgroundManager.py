@@ -2,13 +2,12 @@
 @Author: Conghao Wong
 @Date: 2024-11-05 15:47:04
 @LastEditors: Conghao Wong
-@LastEditTime: 2025-01-02 16:19:11
+@LastEditTime: 2025-01-03 15:27:47
 @Github: https://cocoon2wong.github.io
 @Copyright 2024 Conghao Wong, All Rights Reserved.
 """
 
 import os
-import tkinter as tk
 from copy import copy, deepcopy
 from tkinter import filedialog
 from typing import Any
@@ -18,18 +17,16 @@ import numpy as np
 import torch
 
 import qpid
-from qpid.__root import BaseObject
 from qpid.args import Args
 from qpid.base import BaseManager
 from qpid.constant import INPUT_TYPES
 from qpid.dataset.agent_based import Agent
 from qpid.training import Structure
-from qpid.utils import dir_check, get_mask, move_to_device
+from qpid.utils import DATASET_DICT, dir_check, get_mask, move_to_device
 
 from .__args import PlaygroundArgs, args
 from .__constant import (DRAW_MODE_PLT, DRAW_MODE_QPID,
                          DRAW_MODE_QPID_PHYSICAL, LOG_PATH)
-from .__interface import InterfaceManager
 from .__visManager import VisManager
 
 # Configs for computing and drawing the social matrix
@@ -48,18 +45,29 @@ class PlaygroundManager(BaseManager):
         self.pg_args = self.args.register_subargs(PlaygroundArgs, 'pg_args')
 
         # TK Vars
-        self.root = tk.Tk()
-        self.tk_vars: dict[str, tk.StringVar] = {}
-        self.tk_vars['agent_id'] = tk.StringVar(value='0')
-        self.tk_vars['model_path'] = tk.StringVar(value=self.args.load)
+        # self.root = tk.Tk()
+        # self.tk_vars: dict[str, tk.StringVar] = {}
 
-        for p in range(self.pg_args.points):
-            for i in ['x', 'y']:
-                self.tk_vars[f'p{i}{p}'] = tk.StringVar()
+        self.bind_dict = {}
+
+        self.vars: dict[str, Any] = {}
+
+        self.update_var('agent_id', '0')
+        self.update_var('model_path', self.args.load)
+
+        self.update_var('Dataset', 'ETH-UCY')
+        self.update_var('Split', 'zara1')
+        self.update_var('Clip', 'zara1')
+
+        self.update_var('Dataset_list', ['ETH-UCY'])
+        self.update_var('Split_list', ['zara1'])
+        self.update_var('Clip_list', ['zara1'])
+
+        # for p in range(self.pg_args.points):
+        #     for i in ['x', 'y']:
+        #         self.tk_vars[f'p{i}{p}'] = tk.StringVar()
 
         # Managers
-        self.interface_mgr = InterfaceManager(manager=self, name='Playground')
-        BaseObject.__init__(self, name='root')      # Redirect logs
         self.vis_mgr: VisManager | None = None
 
         # Variables
@@ -72,37 +80,30 @@ class PlaygroundManager(BaseManager):
         self.input_types = None
 
         # Try to load models from the init args
-        self.load(self.model_path)
+        self.load(self.vars['model_path'])
 
         # Interpolation layer
         self.interp_model = None
 
-        # Bind methods to the TK canvas
-        self.interface_mgr.button_agent_id.bind(
-            "<Button-1>", lambda e: self.get_random_id())
-        self.interface_mgr.button_run.bind(
-            "<Button-1>", lambda e: self.run(with_manual_neighbor=True))
-        self.interface_mgr.button_run_original.bind(
-            "<Button-1>", lambda e: self.run(with_manual_neighbor=False))
-        self.interface_mgr.button_load_model.bind(
-            "<Button-1>", lambda e: self.choose_weights())
-
-        if self.pg_args.compute_social_diff:
-            self.interface_mgr.button_load_model["text"] = 'Compute Social Heatmap'
-            self.interface_mgr.button_load_model.bind(
-                "<Button-1>", lambda e: self.compute_social_matrix())
-
-            self.interface_mgr.button_clear_manual_inputs["text"] = 'Show Social Heatmap'
-            self.interface_mgr.button_clear_manual_inputs.bind(
-                "<Button-1>", lambda e: self.show_social_matrix())
+        # Init dataset-related settings
+        self.init_dataset()
 
     @property
     def agent_index(self) -> int:
-        return int(self.tk_vars['agent_id'].get())
+        return int(self.vars['agent_id'])
 
-    @property
-    def model_path(self) -> str:
-        return self.tk_vars['model_path'].get()
+    def bind_var(self, name: str, func):
+        self.bind_dict[name] = func
+
+    def update_var(self, name: str, value: Any):
+        self.vars[name] = value
+        if name in self.bind_dict.keys():
+            self.bind_dict[name](value)
+
+    def visit_all_vars(self):
+        for key in sorted(self.vars, reverse=True):
+            value = self.vars[key]
+            self.update_var(key, value)
 
     @property
     def agents(self):
@@ -121,38 +122,47 @@ class PlaygroundManager(BaseManager):
     def create_vis_manager(self):
         self.vis_mgr = VisManager(manager=self)
 
-        # Bind button events
-        self.interface_mgr.button_switch_draw_mode.bind(
-            "<Button-1>", lambda e: self.vis_mgr.switch_draw_mode())  # type: ignore
-        self.interface_mgr.button_clear_manual_inputs.bind(
-            "<Button-1>", lambda e: self.vis_mgr.clear_manual_positions())  # type: ignore
-
     def choose_weights(self):
         path = filedialog.askdirectory(initialdir='./')
-        self.interface_mgr.text_model_path.config(text=path)
         self.load(path)
+        self.update_var('model_path', path)
+
+    def init_dataset(self):
+        self.update_dataset(
+            self.vars['Dataset'], split=self.args.split, clip=self.pg_args.clip)
+        self.update_var('Dataset_list', list(DATASET_DICT.keys()))
+
+    def update_dataset(self, ds: str, split=None, clip=None):
+        self.update_var('Dataset', ds)
+
+        if not split:
+            split = list(DATASET_DICT[ds].keys())[0]
+
+        self.update_split(split, clip)
+        self.update_var('Split_list', list(DATASET_DICT[ds].keys()))
+
+    def update_split(self, split: str, clip=None):
+        self.update_var('Split', split)
+        ds = self.vars['Dataset']
+
+        if not clip:
+            clip = DATASET_DICT[ds][split][0]
+
+        self.update_var('Clip', clip)
+        self.update_var('Clip_list', DATASET_DICT[ds][split])
 
     def load(self, path: str):
         try:
             terminal_args = args(path)
 
-            match self.pg_args.dataset:
-                case 'ETH-UCY':
-                    _split = 'zara1'
-                case 'SDD':
-                    _split = 'sdd'
-                case 'NBA':
-                    _split = 'nba50k'
-                case 'nuScenes_ov':
-                    _split = 'nuScenes_ov_v1.0'
-                    # self.t.args._set('interval', 0.5)
-                case _:
-                    raise ValueError('Wrong dataset settings!')
+            self.args._set('dataset', self.vars['Dataset'])
+            self.args._set('split', self.vars['Split'])
+            self.pg_args._set('clip', self.vars['Clip'])
 
             # Set datasets
-            terminal_args += ['--force_dataset', self.pg_args.dataset,
+            terminal_args += ['--force_dataset', self.args.dataset,
                               '--force_clip', self.pg_args.clip,
-                              '--force_split', _split]
+                              '--force_split', self.args.split]
 
             t = qpid.entrance(terminal_args, train_or_test=False)
             self.t = t
@@ -181,7 +191,8 @@ class PlaygroundManager(BaseManager):
         old_input_types = self.input_types
         self.input_types = (self.t.model.input_types,
                             self.t.args.obs_frames,
-                            self.t.args.pred_frames)
+                            self.t.args.pred_frames,
+                            self.t.args.force_clip)
         self.t.agent_manager.set_types(self.t.model.input_types,
                                        self.t.model.label_types)
 
@@ -194,12 +205,12 @@ class PlaygroundManager(BaseManager):
             self.input_and_gt = list(ds)[0]
 
         # Create vis manager
-        if not self.vis_mgr:
+        if not self.vis_mgr or (old_input_types and old_input_types[-1] != self.input_types[-1]):
             self.create_vis_manager()
 
     def run(self, with_manual_neighbor=False, save_results=True):
 
-        if not self.input_and_gt or not self.t or not len(self.agents) or not self.vis_mgr:
+        if not self.input_and_gt or not self.t or not len(self.agents):
             raise ValueError
 
         # Gather model inputs
@@ -323,7 +334,7 @@ class PlaygroundManager(BaseManager):
             if self.t:
                 n = min(n, self.t.args.batch_size)
             i = np.random.randint(0, n)
-            self.tk_vars['agent_id'].set(str(i))
+            self.update_var('agent_id', str(i))
         except:
             pass
 

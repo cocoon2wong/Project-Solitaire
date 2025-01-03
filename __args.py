@@ -46,14 +46,6 @@ class PlaygroundArgs(EmptyArgs):
         return self._arg('physical_manual_neighbor_mode', 1.0, TEMPORARY)
 
     @property
-    def dataset(self) -> str:
-        """
-        The dataset to run this playground.
-        It accepts `'ETH-UCY'`, `'SDD'`, `'NBA'`, or `'nuScenes_ov'`.
-        """
-        return self._arg('dataset', 'ETH-UCY', argtype=TEMPORARY)
-
-    @property
     def clip(self) -> str:
         """
         The video clip to run this playground.
@@ -77,6 +69,10 @@ class PlaygroundArgs(EmptyArgs):
     @property
     def compute_social_diff(self) -> int:
         return self._arg('compute_social_diff', 0, argtype=TEMPORARY)
+    
+    @property
+    def show_manual_neighbor_boxes(self) -> int:
+        return self._arg('show_manual_neighbor_boxes', 0, argtype=TEMPORARY)
 
 
 def args(model_path: str):

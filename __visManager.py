@@ -2,7 +2,7 @@
 @Author: Conghao Wong
 @Date: 2024-11-05 15:48:10
 @LastEditors: Conghao Wong
-@LastEditTime: 2024-11-11 10:24:51
+@LastEditTime: 2025-01-03 15:29:33
 @Github: https://cocoon2wong.github.io
 @Copyright 2024 Conghao Wong, All Rights Reserved.
 """
@@ -14,6 +14,8 @@ from typing import Any
 import numpy as np
 import torch
 from PIL import Image, ImageTk
+from PyQt6.QtGui import QPixmap
+from PyQt6.QtWidgets import QLabel
 
 from qpid.args.__args import Args
 from qpid.base import BaseManager
@@ -27,7 +29,6 @@ from .__constant import (DRAW_MODE_PLT, DRAW_MODE_QPID,
                          MAX_HEIGHT, MAX_WIDTH, OBSTACLE_IMAGE_PATH, SEG_MAP_B,
                          SEG_MAP_G, SEG_MAP_R, TEMP_IMG_PATH,
                          TEMP_RGB_IMG_PATH, TEMP_SEG_MAP_PATH)
-from .__interface import InterfaceManager
 
 
 class VisManager(BaseManager):
@@ -46,7 +47,7 @@ class VisManager(BaseManager):
 
         # Vis tool
         self.vis_handler = vis.Visualization(manager=self.manager.t,
-                                             dataset=self.pg_args.dataset,
+                                             dataset=self.args.dataset,
                                              clip=self.pg_args.clip)
 
         # Variables
@@ -60,9 +61,9 @@ class VisManager(BaseManager):
         # Init methods
         self.switch_draw_mode()
 
-        # Bind methods on the canvas
-        self.canvas.bind("<Motion>", lambda e: self.on_hover_canvas(e))
-        self.canvas.bind("<Button-1>", lambda e: self.on_click_canvas(e))
+        # # Bind methods on the canvas
+        # self.canvas.bind("<Motion>", lambda e: self.on_hover_canvas(e))
+        # self.canvas.bind("<Button-1>", lambda e: self.on_click_canvas(e))
 
     @property
     def tk_vars(self) -> dict[str, tk.StringVar]:
@@ -73,17 +74,12 @@ class VisManager(BaseManager):
         return DRAW_MODES_ALL[self.draw_mode_count]
 
     @property
-    def canvas(self):
-        return self.manager.get_member(InterfaceManager).canvas
-
-    @property
-    def status_label(self):
-        return self.manager.get_member(InterfaceManager).var_draw_status
+    def canvas(self) -> QLabel:
+        return self.manager.manager.canvas  # type: ignore
 
     def switch_draw_mode(self):
         self.draw_mode_count += 1
         self.draw_mode_count %= len(DRAW_MODES_ALL)
-        self.status_label.config(text=f'Mode: {self.draw_mode}')
 
     def draw(self, model_args: Args, agent: Agent):
         m = self.draw_mode
@@ -104,7 +100,7 @@ class VisManager(BaseManager):
 
         if self.pg_args.save_full_outputs:
             _dir = os.path.dirname(img_save_path)
-            _file = f'_{m}_{self.pg_args.dataset}_{self.pg_args.clip}_{agent.loss_weight}.png'
+            _file = f'_{m}_{self.args.dataset}_{self.pg_args.clip}_{agent.loss_weight}.png'
             img_save_path = os.path.join(_dir, _file)
 
         do(agent=agent,
@@ -134,8 +130,7 @@ class VisManager(BaseManager):
             cv2.imwrite(_p, f)
             img_save_path = _p
 
-        self.image = tk.PhotoImage(file=img_save_path)
-        self.canvas.create_image(MAX_WIDTH//2, MAX_HEIGHT//2, image=self.image)
+        self.canvas.setPixmap(QPixmap(img_save_path))
 
     def draw_segmap(self, segmap: torch.Tensor):
         if self.image is None:
@@ -152,10 +147,7 @@ class VisManager(BaseManager):
         _segmap = _segmap.resize((self.image.width(),
                                   self.image.height()))
         _segmap.save(TEMP_SEG_MAP_PATH)
-
-        self.segmap = ImageTk.PhotoImage(_segmap)
-        self.canvas.create_image(MAX_WIDTH//2, MAX_HEIGHT//2,
-                                 image=self.segmap)
+        self.canvas.setPixmap(QPixmap(TEMP_SEG_MAP_PATH))
 
     def on_click_canvas(self, event: tk.Event):
 
