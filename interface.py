@@ -2,7 +2,7 @@
 @Author: Conghao Wong
 @Date: 2025-01-02 20:39:07
 @LastEditors: Conghao Wong
-@LastEditTime: 2025-01-06 20:58:06
+@LastEditTime: 2025-01-06 21:48:20
 @Github: https://cocoon2wong.github.io
 @Copyright 2025 Conghao Wong, All Rights Reserved.
 """
@@ -11,10 +11,11 @@ import logging
 import os
 import sys
 
-from PyQt6.QtWidgets import QMainWindow, QTextEdit
+from PyQt6.QtWidgets import QApplication, QMainWindow, QTextEdit
 
 import qpid
 from qpid.__root import BaseObject
+from qpid.args import Args
 from qpid.base import BaseManager
 from qpid.utils import dir_check
 
@@ -24,12 +25,14 @@ from .window import Ui_MainWindow
 
 
 class MainWindow(QMainWindow, Ui_MainWindow, BaseManager):
-    def __init__(self, playground_mgr: PlaygroundManager) -> None:
+    def __init__(self, playground_mgr: PlaygroundManager,
+                 app: QApplication) -> None:
 
         super().__init__()
         self.setupUi(self)
         self.p = playground_mgr
         self.p.manager = self
+        self.app = app
 
         if len(sys.argv) < 2:
             self.label_bootargs.hide()
@@ -67,8 +70,7 @@ class MainWindow(QMainWindow, Ui_MainWindow, BaseManager):
         self.p.bind_var('Clip_list', lambda t: (self.comboBox_Clip.clear(),
                                                 self.comboBox_Clip.addItems(t)))
 
-        self.pushButton_changedataset.clicked.connect(lambda: (self.p.load(self.p.vars['model_path']),
-                                                               self.lineEdit_agentid.setText('0')))
+        self.pushButton_changedataset.clicked.connect(self.change_dataset)
 
         if not self.p.vis_mgr:
             raise ValueError
@@ -99,6 +101,18 @@ class MainWindow(QMainWindow, Ui_MainWindow, BaseManager):
         if not self.p.vis_mgr:
             raise ValueError
         return self.p.vis_mgr
+
+    def change_dataset(self):
+        self.hide()
+
+        p_new = PlaygroundManager(Args(sys.argv + [
+            '--split', self.p.vars['Split'],
+            '--clip', self.p.vars['Clip'],
+            '--load', self.p.vars['model_path']
+        ]))
+
+        self.__init__(p_new, self.app)
+        self.show()
 
 
 class TextboxHandler(logging.Handler):

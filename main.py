@@ -2,7 +2,7 @@
 @Author: Conghao Wong
 @Date: 2024-11-05 15:29:32
 @LastEditors: Conghao Wong
-@LastEditTime: 2025-01-03 15:32:26
+@LastEditTime: 2025-01-06 21:48:15
 @Github: https://cocoon2wong.github.io
 @Copyright 2024 Conghao Wong, All Rights Reserved.
 """
@@ -27,6 +27,6 @@ from qpid.args import Args
 if __name__ == '__main__':
     p = PlaygroundManager(Args(sys.argv))
     app = QApplication([])
-    main = MainWindow(p)
+    main = MainWindow(p, app)
     main.show()
     sys.exit(app.exec())

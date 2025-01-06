@@ -49,13 +49,13 @@ class PlaygroundManager(BaseManager):
         self.update_var('agent_id', '0')
         self.update_var('model_path', self.args.load)
 
-        self.update_var('Dataset', 'ETH-UCY')
-        self.update_var('Split', 'zara1')
-        self.update_var('Clip', 'zara1')
+        self.update_var('Dataset', self.args.dataset)
+        self.update_var('Split', self.args.split)
+        self.update_var('Clip', self.pg_args.clip)
 
-        self.update_var('Dataset_list', ['ETH-UCY'])
-        self.update_var('Split_list', ['zara1'])
-        self.update_var('Clip_list', ['zara1'])
+        self.update_var('Dataset_list', [self.args.dataset])
+        self.update_var('Split_list', [self.args.split])
+        self.update_var('Clip_list', [self.pg_args.clip])
 
         self.update_var('has_manual_neighbors', False)
 
@@ -346,6 +346,7 @@ class PlaygroundManager(BaseManager):
             raise ValueError(len(position))
 
         nei_count = get_neighbor_count(_nei)
+        nei_count = min(nei_count, self.args.max_agents - 1)
         _nei[0, nei_count] = traj - obs.numpy()[0, -1:, :]
         return torch.from_numpy(_nei)
 
