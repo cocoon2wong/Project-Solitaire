@@ -2,7 +2,7 @@
 @Author: Conghao Wong
 @Date: 2024-11-05 15:48:10
 @LastEditors: Conghao Wong
-@LastEditTime: 2025-01-03 15:29:33
+@LastEditTime: 2025-01-06 09:33:56
 @Github: https://cocoon2wong.github.io
 @Copyright 2024 Conghao Wong, All Rights Reserved.
 """
@@ -80,6 +80,7 @@ class VisManager(BaseManager):
     def switch_draw_mode(self):
         self.draw_mode_count += 1
         self.draw_mode_count %= len(DRAW_MODES_ALL)
+        self.manager.update_var('draw_mode', self.draw_mode) # type: ignore
 
     def draw(self, model_args: Args, agent: Agent):
         m = self.draw_mode

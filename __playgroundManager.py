@@ -2,7 +2,7 @@
 @Author: Conghao Wong
 @Date: 2024-11-05 15:47:04
 @LastEditors: Conghao Wong
-@LastEditTime: 2025-01-03 16:54:37
+@LastEditTime: 2025-01-06 09:26:08
 @Github: https://cocoon2wong.github.io
 @Copyright 2024 Conghao Wong, All Rights Reserved.
 """
@@ -42,11 +42,9 @@ class PlaygroundManager(BaseManager):
         super().__init__(args, manager, name)
 
         # Args
+        self.args._set_default('load', 'static')
         self.pg_args = self.args.register_subargs(PlaygroundArgs, 'pg_args')
 
-        # TK Vars
-        # self.root = tk.Tk()
-        # self.tk_vars: dict[str, tk.StringVar] = {}
 
         self.bind_dict = {}
 
