@@ -2,7 +2,7 @@
 @Author: Conghao Wong
 @Date: 2024-11-05 17:10:05
 @LastEditors: Conghao Wong
-@LastEditTime: 2024-11-05 20:14:17
+@LastEditTime: 2025-01-06 18:13:52
 @Github: https://cocoon2wong.github.io
 @Copyright 2024 Conghao Wong, All Rights Reserved.
 """
@@ -15,6 +15,10 @@ MAX_WIDTH = 640
 DRAW_MODE_PLT = 'PLT'
 DRAW_MODE_QPID = 'Manual Neighbor'
 DRAW_MODE_QPID_PHYSICAL = 'Interactive (PC)'
+
+START_POINT_COLOR = '#FF0000'
+MID_POINT_COLOR = '#FFFF00'
+END_POINT_COLOR = '#0000FF'
 
 LOG_PATH = './temp_files/playground/run.log'
 TK_BORDER_WIDTH = 5

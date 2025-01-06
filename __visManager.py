@@ -2,7 +2,7 @@
 @Author: Conghao Wong
 @Date: 2024-11-05 15:48:10
 @LastEditors: Conghao Wong
-@LastEditTime: 2025-01-06 09:33:56
+@LastEditTime: 2025-01-06 20:57:11
 @Github: https://cocoon2wong.github.io
 @Copyright 2024 Conghao Wong, All Rights Reserved.
 """
@@ -13,9 +13,7 @@ from typing import Any
 
 import numpy as np
 import torch
-from PIL import Image, ImageTk
-from PyQt6.QtGui import QPixmap
-from PyQt6.QtWidgets import QLabel
+from PyQt6 import QtCore, QtGui, QtWidgets
 
 from qpid.args.__args import Args
 from qpid.base import BaseManager
@@ -25,10 +23,10 @@ from qpid.mods import vis
 from .__args import PlaygroundArgs
 from .__constant import (DRAW_MODE_PLT, DRAW_MODE_QPID,
                          DRAW_MODE_QPID_PHYSICAL, DRAW_MODES_ALL,
-                         MARKER_CIRCLE_RADIUS, MARKER_RADIUS, MARKER_TAG,
-                         MAX_HEIGHT, MAX_WIDTH, OBSTACLE_IMAGE_PATH, SEG_MAP_B,
-                         SEG_MAP_G, SEG_MAP_R, TEMP_IMG_PATH,
-                         TEMP_RGB_IMG_PATH, TEMP_SEG_MAP_PATH)
+                         END_POINT_COLOR, MARKER_RADIUS, MAX_HEIGHT, MAX_WIDTH,
+                         MID_POINT_COLOR, OBSTACLE_IMAGE_PATH, SEG_MAP_B,
+                         SEG_MAP_G, SEG_MAP_R, START_POINT_COLOR,
+                         TEMP_IMG_PATH, TEMP_RGB_IMG_PATH, TEMP_SEG_MAP_PATH)
 
 
 class VisManager(BaseManager):
@@ -42,8 +40,8 @@ class VisManager(BaseManager):
         self.image: tk.PhotoImage | None = None
         self.image_shape = None
 
-        self.segmap: ImageTk.PhotoImage | None = None
-        self.obstacle_img: ImageTk.PhotoImage | None = None
+        # self.segmap: ImageTk.PhotoImage | None = None
+        # self.obstacle_img: ImageTk.PhotoImage | None = None
 
         # Vis tool
         self.vis_handler = vis.Visualization(manager=self.manager.t,
@@ -61,26 +59,50 @@ class VisManager(BaseManager):
         # Init methods
         self.switch_draw_mode()
 
-        # # Bind methods on the canvas
-        # self.canvas.bind("<Motion>", lambda e: self.on_hover_canvas(e))
-        # self.canvas.bind("<Button-1>", lambda e: self.on_click_canvas(e))
+        # Set colors and labels of manual points
+        n = self.pg_args.points
+        if n == 2:
+            self.point_colors = [QtGui.QColor(START_POINT_COLOR),
+                                 QtGui.QColor(END_POINT_COLOR)]
+            self.point_labels = ['START', 'END']
+        elif n == 3:
+            self.point_colors = [QtGui.QColor(START_POINT_COLOR),
+                                 QtGui.QColor(MID_POINT_COLOR),
+                                 QtGui.QColor(END_POINT_COLOR)]
+            self.point_labels = ['START', 'MIDDLE', 'END']
+        else:
+            self.log(f'Wrong points `{self.pg_args.points}`',
+                     level='error', raiseError=ValueError)
 
     @property
-    def tk_vars(self) -> dict[str, tk.StringVar]:
-        return self.manager.tk_vars     # type: ignore
+    def positions(self) -> list[QtCore.QPoint]:
+        """
+        Positions of all clicked points on the canvas.
+        """
+        if not 'click' in self.vars.keys():
+            self.manager.vars['click'] = []  # type: ignore
+
+        return self.manager.vars['click']   # type: ignore
+
+    @property
+    def vars(self) -> dict[str, Any]:
+        """
+        The dict of all shared variables.
+        """
+        return self.manager.vars    # type: ignore
 
     @property
     def draw_mode(self) -> str:
         return DRAW_MODES_ALL[self.draw_mode_count]
 
     @property
-    def canvas(self) -> QLabel:
+    def canvas(self) -> QtWidgets.QLabel:
         return self.manager.manager.canvas  # type: ignore
 
     def switch_draw_mode(self):
         self.draw_mode_count += 1
         self.draw_mode_count %= len(DRAW_MODES_ALL)
-        self.manager.update_var('draw_mode', self.draw_mode) # type: ignore
+        self.manager.update_var('draw_mode', self.draw_mode)  # type: ignore
 
     def draw(self, model_args: Args, agent: Agent):
         m = self.draw_mode
@@ -131,9 +153,13 @@ class VisManager(BaseManager):
             cv2.imwrite(_p, f)
             img_save_path = _p
 
-        self.canvas.setPixmap(QPixmap(img_save_path))
+        self.vars['image_path'] = img_save_path
+        self.canvas.update()
 
     def draw_segmap(self, segmap: torch.Tensor):
+        # TODO: This method is now useless
+        return
+
         if self.image is None:
             return
 
@@ -150,23 +176,27 @@ class VisManager(BaseManager):
         _segmap.save(TEMP_SEG_MAP_PATH)
         self.canvas.setPixmap(QPixmap(TEMP_SEG_MAP_PATH))
 
-    def on_click_canvas(self, event: tk.Event):
+    def on_click_canvas(self, ev: QtGui.QMouseEvent):
 
         # Do nothing in the plt mode
         if not self.draw_mode in [DRAW_MODE_QPID,
                                   DRAW_MODE_QPID_PHYSICAL]:
             return
 
-        x, y = [event.x, event.y]
+        pos = ev.pos()
+
+        x, y = [pos.x(), pos.y()]
         x_ip, y_ip = self.canvas_pixel_to_image_pixel(x, y)
         x_ir, y_ir = self.image_pixel_to_image_real(x_ip, y_ip)
 
         c = self.click_count
         if c == 0:
             self.clear_markers()
-            self.draw_marker(x, y, 'red', text='START')
-            self.click_count = 1
 
+        self.positions.append(pos)
+
+        if c == 0:
+            self.click_count = 1
             if self.draw_mode == DRAW_MODE_QPID:
                 [x_target, y_target] = [x_ir, y_ir]
             elif self.draw_mode == DRAW_MODE_QPID_PHYSICAL:
@@ -174,10 +204,8 @@ class VisManager(BaseManager):
 
         elif c == 1:
             if self.pg_args.points == 3 and self.draw_mode == DRAW_MODE_QPID:
-                self.draw_marker(x, y, 'orange', text='MIDDLE')
                 self.click_count = 2
             else:
-                self.draw_marker(x, y, 'blue', text='END')
                 self.click_count = 0
 
             if self.draw_mode == DRAW_MODE_QPID:
@@ -185,62 +213,77 @@ class VisManager(BaseManager):
 
             elif self.draw_mode == DRAW_MODE_QPID_PHYSICAL:
                 [x_target, y_target] = [x_ip, y_ip]
-                self.tk_vars['px1'].set(str(x_ip))
-                self.tk_vars['py1'].set(str(y_ip))
+                self.vars['px1'] = x_ip
+                self.vars['py1'] = y_ip
                 self.draw_obstacle()
 
         elif c == 2:
-            self.draw_marker(x, y, 'blue', text='END')
             self.click_count = 0
 
             [x_target, y_target] = [x_ir, y_ir]
 
         # Save positions
-        self.tk_vars[f'px{c}'].set(str(x_target))
-        self.tk_vars[f'py{c}'].set(str(y_target))
+        self.canvas.update()
+        self.vars[f'px{c}'] = x_target
+        self.vars[f'py{c}'] = y_target
 
-    def on_hover_canvas(self, event: tk.Event):
-        if self.hover_marker_id is not None:
-            self.canvas.delete(self.hover_marker_id)
+    def painter_event(self, a0: QtGui.QPaintEvent):
+        painter = QtGui.QPainter(self.canvas)
+        painter.setPen(QtGui.QColor(255, 0, 0))
 
-        self.hover_marker_id = self.canvas.create_oval(
-            event.x - MARKER_RADIUS,
-            event.y - MARKER_RADIUS,
-            event.x + MARKER_RADIUS,
-            event.y + MARKER_RADIUS,
-            fill='white'
-        )
+        # Background image
+        if 'image_path' in self.vars.keys():
+            painter.drawImage(QtCore.QPoint(int(self.image_margin[1]),
+                                            int(self.image_margin[0])),
+                              QtGui.QImage(self.vars['image_path']))
+
+        # Manual Points
+        if len(self.positions):
+            for p, c, t in zip(self.positions,
+                               self.point_colors,
+                               self.point_labels):
+                self.draw_marker(painter, p, c, t)
+
+        painter.end()
 
     def clear_manual_positions(self):
         self.clear_markers()
         for p in range(self.pg_args.points):
             for i in ['x', 'y']:
-                self.tk_vars[f'p{i}{p}'].set('')
+                self.vars[f'p{i}{p}'] = None
+        self.canvas.update()
 
     def clear_markers(self):
-        self.canvas.delete(MARKER_TAG)
+        self.vars['click'] = []
 
-    def draw_marker(self, x: float, y: float,
-                    color: str, text: str | None = None):
+    def draw_marker(self, painter: QtGui.QPainter,
+                    pos: QtCore.QPoint,
+                    color: QtGui.QColor,
+                    text: str | None = None):
+
+        [x, y] = [pos.x(), pos.y()]
+
         if text:
-            self.canvas.create_text(x - 2, y - 20 - 2, text=text,
-                                    tags=MARKER_TAG, anchor=tk.N, fill='black')
-            self.canvas.create_text(x, y - 20, text=text,
-                                    tags=MARKER_TAG, anchor=tk.N, fill='white')
+            # Draw text shadow first
+            painter.setPen(QtGui.QColor(0, 0, 0))
+            painter.drawText(x-1, y-20-1, text)
 
-        self.canvas.create_oval(x - MARKER_CIRCLE_RADIUS,
-                                y - MARKER_CIRCLE_RADIUS,
-                                x + MARKER_CIRCLE_RADIUS,
-                                y + MARKER_CIRCLE_RADIUS,
-                                fill=color, tags=MARKER_TAG)
+            # Draw real text
+            painter.setPen(QtGui.QColor(255, 255, 255))
+            painter.drawText(x, y-20, text)
+
+        painter.setBrush(color)
+        painter.drawEllipse(pos, MARKER_RADIUS, MARKER_RADIUS)
 
     def draw_obstacle(self):
         # Get saved positions (image/pixel)
+        # TODO: This method is now useless
+        return
         res = []
         for _i in ['0', '1']:
             for _j in ['px', 'py']:
-                _r = self.tk_vars[_j + _i].get()
-                if not len(_r):
+                _r = self.vars[_j + _i]
+                if _r is None:
                     return
 
                 res.append(float(_r))
@@ -251,7 +294,7 @@ class VisManager(BaseManager):
 
         _dx, _dy = (abs(int(x1_cp - x0_cp)), abs(int(y1_cp - y0_cp)))
         img = Image.open(OBSTACLE_IMAGE_PATH).resize((_dx, _dy))
-        self.obstacle_img = ImageTk.PhotoImage(img)
+        # self.obstacle_img = ImageTk.PhotoImage(img)
         self.canvas.create_image(min(x0_cp, x1_cp) + _dx // 2,
                                  min(y0_cp, y1_cp) + _dy // 2,
                                  image=self.obstacle_img)

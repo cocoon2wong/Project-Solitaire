@@ -2,13 +2,14 @@
 @Author: Conghao Wong
 @Date: 2025-01-02 20:39:07
 @LastEditors: Conghao Wong
-@LastEditTime: 2025-01-06 09:30:59
+@LastEditTime: 2025-01-06 20:58:06
 @Github: https://cocoon2wong.github.io
 @Copyright 2025 Conghao Wong, All Rights Reserved.
 """
 
 import logging
 import os
+import sys
 
 from PyQt6.QtWidgets import QMainWindow, QTextEdit
 
@@ -30,7 +31,13 @@ class MainWindow(QMainWindow, Ui_MainWindow, BaseManager):
         self.p = playground_mgr
         self.p.manager = self
 
-        self.pushButton_run.clicked.connect(self.p.run)
+        if len(sys.argv) < 2:
+            self.label_bootargs.hide()
+            self.label_bootargs_title.hide()
+        else:
+            self.label_bootargs.setText(' '.join(sys.argv))
+
+        self.pushButton_run.clicked.connect(lambda e: self.p.run(True, True))
         self.pushButton_random.clicked.connect(self.p.get_random_id)
 
         self.p.bind_var('agent_id', self.lineEdit_agentid.setText)
@@ -63,9 +70,19 @@ class MainWindow(QMainWindow, Ui_MainWindow, BaseManager):
         self.pushButton_changedataset.clicked.connect(lambda: (self.p.load(self.p.vars['model_path']),
                                                                self.lineEdit_agentid.setText('0')))
 
+        if not self.p.vis_mgr:
+            raise ValueError
 
         self.p.bind_var('draw_mode', lambda t: self.label_mode.setText(t))
-        self.pushButton_modechange.clicked.connect(lambda e: self.p.vis_mgr.switch_draw_mode())
+        self.pushButton_modechange.clicked.connect(self.v.switch_draw_mode)
+
+        self.canvas.mousePressEvent = self.v.on_click_canvas
+        self.canvas.paintEvent = self.v.painter_event
+
+        self.pushButton_clear.hide()
+        self.pushButton_clear.clicked.connect(self.v.clear_manual_positions)
+        self.p.bind_var('has_manual_neighbor', lambda r: (self.pushButton_clear.show() if r
+                                                          else self.pushButton_clear.hide()))
 
         self.p.visit_all_vars()
 
@@ -76,6 +93,12 @@ class MainWindow(QMainWindow, Ui_MainWindow, BaseManager):
 
         # Redirect logs
         BaseObject.__init__(self.p, name='root')
+
+    @property
+    def v(self):
+        if not self.p.vis_mgr:
+            raise ValueError
+        return self.p.vis_mgr
 
 
 class TextboxHandler(logging.Handler):
