@@ -2,13 +2,12 @@
 @Author: Conghao Wong
 @Date: 2024-11-05 15:48:10
 @LastEditors: Conghao Wong
-@LastEditTime: 2025-01-06 20:57:11
+@LastEditTime: 2025-01-07 19:44:21
 @Github: https://cocoon2wong.github.io
 @Copyright 2024 Conghao Wong, All Rights Reserved.
 """
 
 import os
-import tkinter as tk
 from typing import Any
 
 import numpy as np
@@ -37,8 +36,7 @@ class VisManager(BaseManager):
         self.pg_args = self.args.register_subargs(PlaygroundArgs, 'pg_args')
 
         # Image containers
-        self.image: tk.PhotoImage | None = None
-        self.image_shape = None
+        self.image: QtGui.QImage | None = None
 
         # self.segmap: ImageTk.PhotoImage | None = None
         # self.obstacle_img: ImageTk.PhotoImage | None = None
@@ -153,7 +151,7 @@ class VisManager(BaseManager):
             cv2.imwrite(_p, f)
             img_save_path = _p
 
-        self.vars['image_path'] = img_save_path
+        self.image = QtGui.QImage(img_save_path)
         self.canvas.update()
 
     def draw_segmap(self, segmap: torch.Tensor):
@@ -232,10 +230,10 @@ class VisManager(BaseManager):
         painter.setPen(QtGui.QColor(255, 0, 0))
 
         # Background image
-        if 'image_path' in self.vars.keys():
+        if self.image is not None:
             painter.drawImage(QtCore.QPoint(int(self.image_margin[1]),
                                             int(self.image_margin[0])),
-                              QtGui.QImage(self.vars['image_path']))
+                              self.image)
 
         # Manual Points
         if len(self.positions):

@@ -237,7 +237,7 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "Playground"))
         self.label.setText(_translate("MainWindow", "Settings"))
         self.label_7.setText(_translate("MainWindow", "Model and Dataset"))
         self.label_modelpath.setText(_translate("MainWindow", "Current Model"))
