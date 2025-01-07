@@ -2,7 +2,7 @@
 @Author: Conghao Wong
 @Date: 2025-01-02 20:39:07
 @LastEditors: Conghao Wong
-@LastEditTime: 2025-01-06 21:48:20
+@LastEditTime: 2025-01-07 09:35:49
 @Github: https://cocoon2wong.github.io
 @Copyright 2025 Conghao Wong, All Rights Reserved.
 """
@@ -73,7 +73,7 @@ class MainWindow(QMainWindow, Ui_MainWindow, BaseManager):
         self.pushButton_changedataset.clicked.connect(self.change_dataset)
 
         if not self.p.vis_mgr:
-            raise ValueError
+            self.p.create_vis_manager()
 
         self.p.bind_var('draw_mode', lambda t: self.label_mode.setText(t))
         self.pushButton_modechange.clicked.connect(self.v.switch_draw_mode)
@@ -106,7 +106,8 @@ class MainWindow(QMainWindow, Ui_MainWindow, BaseManager):
         self.hide()
 
         p_new = PlaygroundManager(Args(sys.argv + [
-            '--split', self.p.vars['Split'],
+            '--force_dataset', self.p.vars['Dataset'],
+            '--force_split', self.p.vars['Split'],
             '--clip', self.p.vars['Clip'],
             '--load', self.p.vars['model_path']
         ]))
