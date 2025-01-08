@@ -2,7 +2,7 @@
 @Author: Conghao Wong
 @Date: 2024-11-05 15:48:10
 @LastEditors: Conghao Wong
-@LastEditTime: 2025-01-07 19:44:21
+@LastEditTime: 2025-01-08 20:41:23
 @Github: https://cocoon2wong.github.io
 @Copyright 2024 Conghao Wong, All Rights Reserved.
 """
@@ -105,10 +105,8 @@ class VisManager(BaseManager):
     def draw(self, model_args: Args, agent: Agent):
         m = self.draw_mode
         do = self.vis_handler.draw
-        need_resize = False
 
         if m in [DRAW_MODE_QPID, DRAW_MODE_QPID_PHYSICAL]:
-            need_resize = True
             img_save_path = TEMP_RGB_IMG_PATH
             draw_with_plt = False
 
@@ -131,27 +129,8 @@ class VisManager(BaseManager):
            save_as_images=True,
            draw_with_plt=draw_with_plt)
 
-        if need_resize:
-            import cv2
-            f = cv2.imread(img_save_path)
-            h, w = f.shape[:2]
-            if ((h >= MAX_HEIGHT) and (h/w >= MAX_HEIGHT/MAX_WIDTH)):
-                self.image_scale = h / MAX_HEIGHT
-                self.image_margin = [0, (MAX_WIDTH - w/self.image_scale)//2]
-            elif ((w >= MAX_WIDTH) and (h/w <= MAX_HEIGHT/MAX_WIDTH)):
-                self.image_scale = w / MAX_WIDTH
-                self.image_margin = [(MAX_HEIGHT - h/self.image_scale)//2, 0]
-            else:
-                raise ValueError
-
-            f = cv2.resize(f, [int(w//self.image_scale),
-                               int(h//self.image_scale)])
-            _p = os.path.join(os.path.dirname(img_save_path),
-                              'resized_' + os.path.basename(img_save_path))
-            cv2.imwrite(_p, f)
-            img_save_path = _p
-
         self.image = QtGui.QImage(img_save_path)
+        self.clear_manual_positions()
         self.canvas.update()
 
     def draw_segmap(self, segmap: torch.Tensor):
@@ -189,7 +168,7 @@ class VisManager(BaseManager):
 
         c = self.click_count
         if c == 0:
-            self.clear_markers()
+            self.clear_manual_positions()
 
         self.positions.append(pos)
 
@@ -230,10 +209,7 @@ class VisManager(BaseManager):
         painter.setPen(QtGui.QColor(255, 0, 0))
 
         # Background image
-        if self.image is not None:
-            painter.drawImage(QtCore.QPoint(int(self.image_margin[1]),
-                                            int(self.image_margin[0])),
-                              self.image)
+        self.draw_image(painter)
 
         # Manual Points
         if len(self.positions):
@@ -244,15 +220,40 @@ class VisManager(BaseManager):
 
         painter.end()
 
+    def draw_image(self, painter: QtGui.QPainter):
+        if not self.image:
+            return
+
+        w = self.image.width()
+        h = self.image.height()
+
+        w_canvas = self.canvas.width() - 2
+        h_canvas = self.canvas.height() - 2
+
+        w_delta = w_canvas / w
+        h_delta = h_canvas / h
+
+        scale = min(h_delta, w_delta)
+        w_scaled = int(w * scale)
+        h_scaled = int(h * scale)
+
+        w_margin = (w_canvas - w_scaled) // 2
+        h_margin = (h_canvas - h_scaled) // 2
+
+        self.image.scaled(int(w * scale), int(h * scale))
+
+        painter.drawImage(QtCore.QPoint(w_margin, h_margin),
+                          self.image.scaled(int(w * scale), int(h * scale)))
+
+        self.image_scale = 1/scale
+        self.image_margin = [h_margin, w_margin]
+
     def clear_manual_positions(self):
-        self.clear_markers()
+        self.vars['click'] = []
         for p in range(self.pg_args.points):
             for i in ['x', 'y']:
                 self.vars[f'p{i}{p}'] = None
         self.canvas.update()
-
-    def clear_markers(self):
-        self.vars['click'] = []
 
     def draw_marker(self, painter: QtGui.QPainter,
                     pos: QtCore.QPoint,

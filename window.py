@@ -12,17 +12,18 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(889, 661)
+        MainWindow.resize(890, 662)
         self.centralwidget = QtWidgets.QWidget(parent=MainWindow)
+        self.centralwidget.setAutoFillBackground(False)
         self.centralwidget.setObjectName("centralwidget")
-        self.horizontalLayoutWidget = QtWidgets.QWidget(parent=self.centralwidget)
-        self.horizontalLayoutWidget.setGeometry(QtCore.QRect(0, 0, 890, 664))
-        self.horizontalLayoutWidget.setObjectName("horizontalLayoutWidget")
-        self.horizontalLayout = QtWidgets.QHBoxLayout(self.horizontalLayoutWidget)
-        self.horizontalLayout.setContentsMargins(0, 0, 0, 0)
+        self.horizontalLayout_4 = QtWidgets.QHBoxLayout(self.centralwidget)
+        self.horizontalLayout_4.setContentsMargins(0, 0, 0, 0)
+        self.horizontalLayout_4.setSpacing(0)
+        self.horizontalLayout_4.setObjectName("horizontalLayout_4")
+        self.horizontalLayout = QtWidgets.QHBoxLayout()
         self.horizontalLayout.setSpacing(0)
         self.horizontalLayout.setObjectName("horizontalLayout")
-        self.widget_left = QtWidgets.QWidget(parent=self.horizontalLayoutWidget)
+        self.widget_left = QtWidgets.QWidget(parent=self.centralwidget)
         self.widget_left.setMaximumSize(QtCore.QSize(224, 16777215))
         self.widget_left.setStyleSheet("QWidget #widget_left{\n"
 "    background-color: rgb(255, 255, 255);\n"
@@ -188,8 +189,8 @@ class Ui_MainWindow(object):
         self.pushButton_run.setObjectName("pushButton_run")
         self.verticalLayout_4.addWidget(self.pushButton_run)
         self.horizontalLayout.addWidget(self.widget_left)
-        self.widget_right = QtWidgets.QWidget(parent=self.horizontalLayoutWidget)
-        self.widget_right.setMaximumSize(QtCore.QSize(670, 16777215))
+        self.widget_right = QtWidgets.QWidget(parent=self.centralwidget)
+        self.widget_right.setMaximumSize(QtCore.QSize(16777215, 16777215))
         self.widget_right.setStyleSheet("QWidget #widget_right{\n"
 "    background-color: rgb(255, 255, 255);\n"
 "}")
@@ -207,7 +208,7 @@ class Ui_MainWindow(object):
         self.verticalLayout.addWidget(self.label_2)
         self.canvas = QtWidgets.QLabel(parent=self.widget_right)
         self.canvas.setMinimumSize(QtCore.QSize(640, 480))
-        self.canvas.setMaximumSize(QtCore.QSize(640, 480))
+        self.canvas.setMaximumSize(QtCore.QSize(16777215, 16777215))
         font = QtGui.QFont()
         font.setItalic(True)
         self.canvas.setFont(font)
@@ -230,6 +231,7 @@ class Ui_MainWindow(object):
         self.textEdit_logbar.setObjectName("textEdit_logbar")
         self.verticalLayout.addWidget(self.textEdit_logbar)
         self.horizontalLayout.addWidget(self.widget_right)
+        self.horizontalLayout_4.addLayout(self.horizontalLayout)
         MainWindow.setCentralWidget(self.centralwidget)
 
         self.retranslateUi(MainWindow)
