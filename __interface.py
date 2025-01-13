@@ -2,7 +2,7 @@
 @Author: Conghao Wong
 @Date: 2025-01-02 20:39:07
 @LastEditors: Conghao Wong
-@LastEditTime: 2025-01-13 19:28:57
+@LastEditTime: 2025-01-13 20:14:42
 @Github: https://cocoon2wong.github.io
 @Copyright 2025 Conghao Wong, All Rights Reserved.
 """
@@ -118,7 +118,8 @@ class MainWindow(QMainWindow, Ui_MainWindow, BaseManager):
             self.label_modelpath.setText(path),
             self.dataset_dialog.lineEdit_modelpath.setText(path)
         ))
-        self.pushButton_load.clicked.connect(self.p.choose_weights)
+        self.pushButton_load.clicked.connect(
+            lambda e: self.p.choose_weights(load=True))
 
         self.pushButton_dataset.clicked.connect(self.dataset_dialog.show)
 
