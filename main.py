@@ -2,7 +2,7 @@
 @Author: Conghao Wong
 @Date: 2024-11-05 15:29:32
 @LastEditors: Conghao Wong
-@LastEditTime: 2025-01-06 21:48:15
+@LastEditTime: 2025-01-13 16:09:23
 @Github: https://cocoon2wong.github.io
 @Copyright 2024 Conghao Wong, All Rights Reserved.
 """
@@ -14,14 +14,12 @@ from PyQt6.QtWidgets import QApplication
 
 sys.path.insert(0, os.path.abspath('.'))
 
-from playground.interface import MainWindow
-
 try:
     import main
 except:
     pass
 
-from playground import PlaygroundManager
+from playground import MainWindow, PlaygroundManager
 from qpid.args import Args
 
 if __name__ == '__main__':

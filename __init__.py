@@ -8,5 +8,6 @@
 """
 
 from .__args import PlaygroundArgs
+from .__interface import MainWindow
 from .__playgroundManager import PlaygroundManager
 from .__visManager import VisManager

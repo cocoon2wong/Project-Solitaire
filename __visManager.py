@@ -2,7 +2,7 @@
 @Author: Conghao Wong
 @Date: 2024-11-05 15:48:10
 @LastEditors: Conghao Wong
-@LastEditTime: 2025-01-08 20:41:23
+@LastEditTime: 2025-01-13 16:07:58
 @Github: https://cocoon2wong.github.io
 @Copyright 2024 Conghao Wong, All Rights Reserved.
 """
@@ -22,10 +22,10 @@ from qpid.mods import vis
 from .__args import PlaygroundArgs
 from .__constant import (DRAW_MODE_PLT, DRAW_MODE_QPID,
                          DRAW_MODE_QPID_PHYSICAL, DRAW_MODES_ALL,
-                         END_POINT_COLOR, MARKER_RADIUS, MAX_HEIGHT, MAX_WIDTH,
-                         MID_POINT_COLOR, OBSTACLE_IMAGE_PATH, SEG_MAP_B,
-                         SEG_MAP_G, SEG_MAP_R, START_POINT_COLOR,
-                         TEMP_IMG_PATH, TEMP_RGB_IMG_PATH, TEMP_SEG_MAP_PATH)
+                         END_POINT_COLOR, MARKER_RADIUS, MID_POINT_COLOR,
+                         OBSTACLE_IMAGE_PATH, SEG_MAP_B, SEG_MAP_G, SEG_MAP_R,
+                         START_POINT_COLOR, TEMP_IMG_PATH, TEMP_RGB_IMG_PATH,
+                         TEMP_SEG_MAP_PATH)
 
 
 class VisManager(BaseManager):
@@ -78,9 +78,15 @@ class VisManager(BaseManager):
         Positions of all clicked points on the canvas.
         """
         if not 'click' in self.vars.keys():
-            self.manager.vars['click'] = []  # type: ignore
-
+            self.positions = []
         return self.manager.vars['click']   # type: ignore
+
+    @positions.setter
+    def positions(self, positions: list[QtCore.QPoint]):
+        self.manager.update_var('click', positions)  # type: ignore
+
+    def append_position(self, pos: QtCore.QPoint):
+        self.positions = self.positions + [pos]
 
     @property
     def vars(self) -> dict[str, Any]:
@@ -130,7 +136,6 @@ class VisManager(BaseManager):
            draw_with_plt=draw_with_plt)
 
         self.image = QtGui.QImage(img_save_path)
-        self.clear_manual_positions()
         self.canvas.update()
 
     def draw_segmap(self, segmap: torch.Tensor):
@@ -168,9 +173,9 @@ class VisManager(BaseManager):
 
         c = self.click_count
         if c == 0:
-            self.clear_manual_positions()
+            self.clear_markers()
 
-        self.positions.append(pos)
+        self.append_position(pos)
 
         if c == 0:
             self.click_count = 1
@@ -204,14 +209,38 @@ class VisManager(BaseManager):
         self.vars[f'px{c}'] = x_target
         self.vars[f'py{c}'] = y_target
 
-    def painter_event(self, a0: QtGui.QPaintEvent):
+    def on_update_canvas(self, a0: QtGui.QPaintEvent):
         painter = QtGui.QPainter(self.canvas)
         painter.setPen(QtGui.QColor(255, 0, 0))
 
-        # Background image
-        self.draw_image(painter)
+        # Draw background image
+        if self.image:
+            w = self.image.width()
+            h = self.image.height()
 
-        # Manual Points
+            w_canvas = self.canvas.width() - 2
+            h_canvas = self.canvas.height() - 2
+
+            w_delta = w_canvas / w
+            h_delta = h_canvas / h
+
+            scale = min(h_delta, w_delta)
+            w_scaled = int(w * scale)
+            h_scaled = int(h * scale)
+
+            w_margin = (w_canvas - w_scaled) // 2
+            h_margin = (h_canvas - h_scaled) // 2
+
+            self.image.scaled(int(w * scale), int(h * scale))
+
+            painter.drawImage(QtCore.QPoint(w_margin, h_margin),
+                              self.image.scaled(int(w * scale), int(h * scale)))
+
+            # Update scaling variables
+            self.image_scale = 1/scale
+            self.image_margin = [h_margin, w_margin]
+
+        # Draw manual points
         if len(self.positions):
             for p, c, t in zip(self.positions,
                                self.point_colors,
@@ -220,36 +249,8 @@ class VisManager(BaseManager):
 
         painter.end()
 
-    def draw_image(self, painter: QtGui.QPainter):
-        if not self.image:
-            return
-
-        w = self.image.width()
-        h = self.image.height()
-
-        w_canvas = self.canvas.width() - 2
-        h_canvas = self.canvas.height() - 2
-
-        w_delta = w_canvas / w
-        h_delta = h_canvas / h
-
-        scale = min(h_delta, w_delta)
-        w_scaled = int(w * scale)
-        h_scaled = int(h * scale)
-
-        w_margin = (w_canvas - w_scaled) // 2
-        h_margin = (h_canvas - h_scaled) // 2
-
-        self.image.scaled(int(w * scale), int(h * scale))
-
-        painter.drawImage(QtCore.QPoint(w_margin, h_margin),
-                          self.image.scaled(int(w * scale), int(h * scale)))
-
-        self.image_scale = 1/scale
-        self.image_margin = [h_margin, w_margin]
-
-    def clear_manual_positions(self):
-        self.vars['click'] = []
+    def clear_markers(self):
+        self.positions = []
         for p in range(self.pg_args.points):
             for i in ['x', 'y']:
                 self.vars[f'p{i}{p}'] = None

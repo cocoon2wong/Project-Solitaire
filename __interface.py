@@ -2,7 +2,7 @@
 @Author: Conghao Wong
 @Date: 2025-01-02 20:39:07
 @LastEditors: Conghao Wong
-@LastEditTime: 2025-01-07 09:35:49
+@LastEditTime: 2025-01-13 16:05:43
 @Github: https://cocoon2wong.github.io
 @Copyright 2025 Conghao Wong, All Rights Reserved.
 """
@@ -21,7 +21,7 @@ from qpid.utils import dir_check
 
 from .__constant import LOG_PATH
 from .__playgroundManager import PlaygroundManager
-from .window import Ui_MainWindow
+from .__window import Ui_MainWindow
 
 
 class MainWindow(QMainWindow, Ui_MainWindow, BaseManager):
@@ -79,12 +79,22 @@ class MainWindow(QMainWindow, Ui_MainWindow, BaseManager):
         self.pushButton_modechange.clicked.connect(self.v.switch_draw_mode)
 
         self.canvas.mousePressEvent = self.v.on_click_canvas
-        self.canvas.paintEvent = self.v.painter_event
+        self.canvas.paintEvent = self.v.on_update_canvas
 
+        # Buttons for the manual neighbor
         self.pushButton_clear.hide()
-        self.pushButton_clear.clicked.connect(self.v.clear_manual_positions)
-        self.p.bind_var('has_manual_neighbor', lambda r: (self.pushButton_clear.show() if r
-                                                          else self.pushButton_clear.hide()))
+        self.pushButton_clear.clicked.connect(self.v.clear_markers)
+
+        self.pushButton_runwithoutneighbors.hide()
+        self.pushButton_runwithoutneighbors.clicked.connect(
+            lambda e: self.p.run(with_manual_neighbor=False))
+
+        self.p.bind_var('click', lambda v: (
+            (self.pushButton_clear.show(),
+             self.pushButton_runwithoutneighbors.show()) if len(v) else
+            (self.pushButton_clear.hide(),
+             self.pushButton_runwithoutneighbors.hide())
+        ))
 
         self.p.visit_all_vars()
 

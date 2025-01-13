@@ -348,6 +348,13 @@ border-bottom-color: rgb(0, 0, 0);</string>
           </layout>
          </item>
          <item>
+          <widget class="MyButton" name="pushButton_runwithoutneighbors">
+           <property name="text">
+            <string>Run w/o Manual Neighbors</string>
+           </property>
+          </widget>
+         </item>
+         <item>
           <widget class="MyButton" name="pushButton_clear">
            <property name="text">
             <string>Clear Manual Neighors</string>
@@ -559,7 +566,7 @@ border-bottom-color: rgb(0, 0, 0);</string>
   <customwidget>
    <class>MyButton</class>
    <extends>QPushButton</extends>
-   <header location="global">mybutton.h</header>
+   <header location="global">__mybutton.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

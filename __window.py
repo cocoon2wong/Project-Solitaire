@@ -1,4 +1,4 @@
-# Form implementation generated from reading ui file 'playground/window.ui'
+# Form implementation generated from reading ui file 'playground/__window.ui'
 #
 # Created by: PyQt6 UI code generator 6.4.2
 #
@@ -154,6 +154,9 @@ class Ui_MainWindow(object):
         self.pushButton_modechange.setObjectName("pushButton_modechange")
         self.horizontalLayout_3.addWidget(self.pushButton_modechange)
         self.verticalLayout_4.addLayout(self.horizontalLayout_3)
+        self.pushButton_runwithoutneighbors = MyButton(parent=self.widget_left)
+        self.pushButton_runwithoutneighbors.setObjectName("pushButton_runwithoutneighbors")
+        self.verticalLayout_4.addWidget(self.pushButton_runwithoutneighbors)
         self.pushButton_clear = MyButton(parent=self.widget_left)
         self.pushButton_clear.setObjectName("pushButton_clear")
         self.verticalLayout_4.addWidget(self.pushButton_clear)
@@ -253,10 +256,11 @@ class Ui_MainWindow(object):
         self.label_9.setText(_translate("MainWindow", "Visualization Mode"))
         self.label_mode.setText(_translate("MainWindow", "TextLabel"))
         self.pushButton_modechange.setText(_translate("MainWindow", "Switch"))
+        self.pushButton_runwithoutneighbors.setText(_translate("MainWindow", "Run w/o Manual Neighbors"))
         self.pushButton_clear.setText(_translate("MainWindow", "Clear Manual Neighors"))
         self.label_bootargs_title.setText(_translate("MainWindow", "Booting Args"))
         self.label_bootargs.setText(_translate("MainWindow", "Boot args"))
         self.pushButton_run.setText(_translate("MainWindow", "Run"))
         self.label_2.setText(_translate("MainWindow", "Predictions"))
         self.canvas.setText(_translate("MainWindow", "Click \"Run\" to start"))
-from mybutton import MyButton
+from __mybutton import MyButton
