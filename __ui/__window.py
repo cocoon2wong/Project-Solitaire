@@ -220,6 +220,7 @@ class Ui_MainWindow(object):
         self.label_bootargs_title.setText(_translate("MainWindow", "Booting Args"))
         self.label_bootargs.setText(_translate("MainWindow", "Boot args"))
         self.pushButton_dataset.setText(_translate("MainWindow", "More Settings ..."))
+        self.pushButton_dataset.setShortcut(_translate("MainWindow", "Ctrl+,"))
         self.pushButton_run.setText(_translate("MainWindow", "Run"))
         self.label_2.setText(_translate("MainWindow", "Predictions"))
         self.canvas.setText(_translate("MainWindow", "Click \"Run\" to start"))

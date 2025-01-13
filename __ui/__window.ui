@@ -307,6 +307,9 @@ border-bottom-color: rgb(0, 0, 0);</string>
            <property name="text">
             <string>More Settings ...</string>
            </property>
+           <property name="shortcut">
+            <string>Ctrl+,</string>
+           </property>
           </widget>
          </item>
          <item>
