@@ -2,7 +2,7 @@
 @Author: Conghao Wong
 @Date: 2025-01-02 20:39:07
 @LastEditors: Conghao Wong
-@LastEditTime: 2025-01-13 20:14:42
+@LastEditTime: 2025-01-13 20:56:37
 @Github: https://cocoon2wong.github.io
 @Copyright 2025 Conghao Wong, All Rights Reserved.
 """
@@ -62,6 +62,8 @@ class DatasetDialog(QDialog, Ui_Dialog, BaseManager):
         self.pushButton_ok.clicked.connect(self.on_click_ok)
         self.pushButton_cancel.clicked.connect(self.hide)
 
+        self.plainTextEdit_args.setPlainText(' '.join(sys.argv))
+
     @property
     def p(self) -> PlaygroundManager:
         return self.manager.p
@@ -73,6 +75,7 @@ class DatasetDialog(QDialog, Ui_Dialog, BaseManager):
     def on_click_ok(self):
         vars = self.p.vars
         old_vars = self.old_vars
+        need_restart = False
 
         if (n := vars['model_path']) != (o := old_vars['model_path']):
             if not len(n):
@@ -81,6 +84,15 @@ class DatasetDialog(QDialog, Ui_Dialog, BaseManager):
                 self.p.load(n)
 
         if not vars['Clip'] == self.old_vars['Clip']:
+            need_restart = True
+
+        old_args = ' '.join(sys.argv)
+        new_args = self.plainTextEdit_args.toPlainText()
+        if new_args != old_args:
+            sys.argv = [i for i in new_args.split(' ') if len(i)]
+            need_restart = True
+        
+        if need_restart:
             self.manager.change_dataset()
 
         self.hide()
