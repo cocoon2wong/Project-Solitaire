@@ -2,7 +2,7 @@
 @Author: Conghao Wong
 @Date: 2025-01-02 20:39:07
 @LastEditors: Conghao Wong
-@LastEditTime: 2025-01-13 16:05:43
+@LastEditTime: 2025-01-13 19:28:57
 @Github: https://cocoon2wong.github.io
 @Copyright 2025 Conghao Wong, All Rights Reserved.
 """
@@ -10,8 +10,10 @@
 import logging
 import os
 import sys
+from copy import copy
 
-from PyQt6.QtWidgets import QApplication, QMainWindow, QTextEdit
+from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import QApplication, QDialog, QMainWindow, QTextEdit
 
 import qpid
 from qpid.__root import BaseObject
@@ -21,34 +23,18 @@ from qpid.utils import dir_check
 
 from .__constant import LOG_PATH
 from .__playgroundManager import PlaygroundManager
-from .__window import Ui_MainWindow
+from .__ui import Ui_Dialog, Ui_MainWindow
 
 
-class MainWindow(QMainWindow, Ui_MainWindow, BaseManager):
-    def __init__(self, playground_mgr: PlaygroundManager,
-                 app: QApplication) -> None:
+class DatasetDialog(QDialog, Ui_Dialog, BaseManager):
+    def __init__(self, parent, *args, **kwargs) -> None:
+        QDialog.__init__(self, parent, *args, **kwargs)
+        BaseManager.__init__(self, manager=parent, name='Dataset Dialog')
 
-        super().__init__()
+        self.setWindowFlags(self.windowFlags() |
+                            Qt.WindowType.WindowStaysOnTopHint)
         self.setupUi(self)
-        self.p = playground_mgr
-        self.p.manager = self
-        self.app = app
-
-        if len(sys.argv) < 2:
-            self.label_bootargs.hide()
-            self.label_bootargs_title.hide()
-        else:
-            self.label_bootargs.setText(' '.join(sys.argv))
-
-        self.pushButton_run.clicked.connect(lambda e: self.p.run(True, True))
-        self.pushButton_random.clicked.connect(self.p.get_random_id)
-
-        self.p.bind_var('agent_id', self.lineEdit_agentid.setText)
-        self.lineEdit_agentid.textChanged.connect(
-            lambda t: self.p.update_var('agent_id', t))
-
-        self.p.bind_var('model_path', self.label_modelpath.setText)
-        self.pushButton_load.clicked.connect(self.p.choose_weights)
+        self.manager: MainWindow
 
         self.comboBox_Dataset.textActivated.connect(
             lambda t: self.p.update_dataset(t))
@@ -70,7 +56,71 @@ class MainWindow(QMainWindow, Ui_MainWindow, BaseManager):
         self.p.bind_var('Clip_list', lambda t: (self.comboBox_Clip.clear(),
                                                 self.comboBox_Clip.addItems(t)))
 
-        self.pushButton_changedataset.clicked.connect(self.change_dataset)
+        self.pushButton_browsemodel.clicked.connect(
+            lambda e: self.manager.p.choose_weights(load=False))
+
+        self.pushButton_ok.clicked.connect(self.on_click_ok)
+        self.pushButton_cancel.clicked.connect(self.hide)
+
+    @property
+    def p(self) -> PlaygroundManager:
+        return self.manager.p
+
+    def show(self) -> None:
+        self.old_vars = copy(self.p.vars)
+        return super().show()
+
+    def on_click_ok(self):
+        vars = self.p.vars
+        old_vars = self.old_vars
+
+        if (n := vars['model_path']) != (o := old_vars['model_path']):
+            if not len(n):
+                self.p.vars['model_path'] = o
+            else:
+                self.p.load(n)
+
+        if not vars['Clip'] == self.old_vars['Clip']:
+            self.manager.change_dataset()
+
+        self.hide()
+
+
+class MainWindow(QMainWindow, Ui_MainWindow, BaseManager):
+    def __init__(self, playground_mgr: PlaygroundManager,
+                 app: QApplication) -> None:
+
+        QMainWindow.__init__(self)
+        BaseManager.__init__(self)
+
+        self.setupUi(self)
+        self.p = playground_mgr
+        self.p.manager = self
+        self.app = app
+
+        self.dataset_dialog = DatasetDialog(self)
+        self.dataset_dialog.hide()
+
+        if len(sys.argv) < 2:
+            self.label_bootargs.hide()
+            self.label_bootargs_title.hide()
+        else:
+            self.label_bootargs.setText(' '.join(sys.argv))
+
+        self.pushButton_run.clicked.connect(lambda e: self.p.run(True, True))
+        self.pushButton_random.clicked.connect(self.p.get_random_id)
+
+        self.p.bind_var('agent_id', self.lineEdit_agentid.setText)
+        self.lineEdit_agentid.textChanged.connect(
+            lambda t: self.p.update_var('agent_id', t))
+
+        self.p.bind_var('model_path', lambda path: (
+            self.label_modelpath.setText(path),
+            self.dataset_dialog.lineEdit_modelpath.setText(path)
+        ))
+        self.pushButton_load.clicked.connect(self.p.choose_weights)
+
+        self.pushButton_dataset.clicked.connect(self.dataset_dialog.show)
 
         if not self.p.vis_mgr:
             self.p.create_vis_manager()
@@ -99,12 +149,13 @@ class MainWindow(QMainWindow, Ui_MainWindow, BaseManager):
         self.p.visit_all_vars()
 
         # Redirect all log outputs
+        logger = self.p.logger
+        logger.handlers = []
+
         dir_check(os.path.dirname(LOG_PATH))
         qpid.set_log_path(LOG_PATH)
         qpid.set_log_stream_handler(TextboxHandler(self.textEdit_logbar))
-
-        # Redirect logs
-        BaseObject.__init__(self.p, name='root')
+        BaseObject.__init__(self.p, name=self.p.name)
 
     @property
     def v(self):
@@ -113,16 +164,16 @@ class MainWindow(QMainWindow, Ui_MainWindow, BaseManager):
         return self.p.vis_mgr
 
     def change_dataset(self):
-        self.hide()
-
+        app = self.app
         p_new = PlaygroundManager(Args(sys.argv + [
             '--force_dataset', self.p.vars['Dataset'],
             '--force_split', self.p.vars['Split'],
             '--clip', self.p.vars['Clip'],
             '--load', self.p.vars['model_path']
-        ]))
+        ]), name='root')
 
-        self.__init__(p_new, self.app)
+        self.hide()
+        self.__init__(p_new, app)
         self.show()
 
 

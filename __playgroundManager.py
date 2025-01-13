@@ -2,7 +2,7 @@
 @Author: Conghao Wong
 @Date: 2024-11-05 15:47:04
 @LastEditors: Conghao Wong
-@LastEditTime: 2025-01-06 20:45:07
+@LastEditTime: 2025-01-13 17:52:38
 @Github: https://cocoon2wong.github.io
 @Copyright 2024 Conghao Wong, All Rights Reserved.
 """
@@ -118,10 +118,12 @@ class PlaygroundManager(BaseManager):
     def create_vis_manager(self):
         self.vis_mgr = VisManager(manager=self)
 
-    def choose_weights(self):
+    def choose_weights(self, load=True):
         path = QFileDialog.getExistingDirectory(None, "Choose Weights", "")
-        self.load(path)
         self.update_var('model_path', path)
+
+        if load:
+            self.load(path)
 
     def init_dataset(self):
         self.update_dataset(
