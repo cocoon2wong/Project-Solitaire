@@ -169,7 +169,11 @@ border-bottom-color: rgb(0, 0, 0);</string>
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_2">
            <item>
-            <widget class="QLineEdit" name="lineEdit_agentid"/>
+            <widget class="QLineEdit" name="lineEdit_agentid">
+             <property name="focusPolicy">
+              <enum>Qt::FocusPolicy::ClickFocus</enum>
+             </property>
+            </widget>
            </item>
            <item>
             <widget class="MyButton" name="pushButton_random">
@@ -242,6 +246,9 @@ border-bottom-color: rgb(0, 0, 0);</string>
           <widget class="MyButton" name="pushButton_runwithoutneighbors">
            <property name="text">
             <string>Run w/o Manual Neighbors</string>
+           </property>
+           <property name="shortcut">
+            <string>Shift+Return</string>
            </property>
           </widget>
          </item>
@@ -346,6 +353,9 @@ border-bottom-color: rgb(0, 0, 0);</string>
            </property>
            <property name="text">
             <string>Run</string>
+           </property>
+           <property name="shortcut">
+            <string>Return</string>
            </property>
           </widget>
          </item>
@@ -455,6 +465,9 @@ border-bottom-color: rgb(0, 0, 0);</string>
              <width>0</width>
              <height>0</height>
             </size>
+           </property>
+           <property name="focusPolicy">
+            <enum>Qt::FocusPolicy::ClickFocus</enum>
            </property>
            <property name="frameShape">
             <enum>QFrame::Shape::StyledPanel</enum>
