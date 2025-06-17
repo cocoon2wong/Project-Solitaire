@@ -2,7 +2,7 @@
 @Author: Conghao Wong
 @Date: 2024-11-05 15:48:10
 @LastEditors: Conghao Wong
-@LastEditTime: 2025-01-13 16:07:58
+@LastEditTime: 2025-06-17 21:18:00
 @Github: https://cocoon2wong.github.io
 @Copyright 2024 Conghao Wong, All Rights Reserved.
 """
@@ -129,10 +129,9 @@ class VisManager(BaseManager):
             img_save_path = os.path.join(_dir, _file)
 
         do(agent=agent,
-           frames=[agent.frames[model_args.obs_frames-1]],
+           frames=int(agent.frames[model_args.obs_frames-1]),
            save_name=img_save_path,
-           save_name_with_frame=False,
-           save_as_images=True,
+           save_name_postfix=False,
            draw_with_plt=draw_with_plt)
 
         self.image = QtGui.QImage(img_save_path)
