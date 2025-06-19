@@ -2,7 +2,7 @@
 @Author: Conghao Wong
 @Date: 2024-11-05 15:39:57
 @LastEditors: Conghao Wong
-@LastEditTime: 2025-01-02 16:22:13
+@LastEditTime: 2025-06-19 16:06:53
 @Github: https://cocoon2wong.github.io
 @Copyright 2024 Conghao Wong, All Rights Reserved.
 """
@@ -17,7 +17,7 @@ class PlaygroundArgs(EmptyArgs):
     @property
     def draw_seg_map(self) -> int:
         """
-        Choose whether to draw segmentation maps on the canvas.
+        (bool) Choose whether to draw segmentation maps on the canvas.
         """
         return self._arg('draw_seg_map', 1, TEMPORARY)
 
@@ -32,7 +32,7 @@ class PlaygroundArgs(EmptyArgs):
     @property
     def lite(self) -> int:
         """
-        Choose whether to show the lite version of tk window.
+        (bool) Choose whether to show the lite-version's visualization window.
         """
         return self._arg('lite', 0, TEMPORARY)
 
@@ -55,20 +55,23 @@ class PlaygroundArgs(EmptyArgs):
     @property
     def do_not_draw_neighbors(self) -> int:
         """
-        Choose whether to draw neighboring-agents' trajectories.
+        (bool) Choose whether to draw neighboring-agents' trajectories.
         """
         return self._arg('do_not_draw_neighbors', 0, argtype=TEMPORARY)
 
     @property
     def save_full_outputs(self) -> int:
         """
-        Choose whether to save all outputs as images.
+        (bool) Choose whether to save all outputs as images.
         """
         return self._arg('save_full_outputs', 0, argtype=TEMPORARY)
 
     @property
-    def compute_social_diff(self) -> int:
-        return self._arg('compute_social_diff', 0, argtype=TEMPORARY)
+    def compute_social_mod(self) -> int:
+        """
+        (bool) Choose whether to enable the computing of social modifications.
+        """
+        return self._arg('compute_social_mod', 0, argtype=TEMPORARY)
     
     @property
     def show_manual_neighbor_boxes(self) -> int:

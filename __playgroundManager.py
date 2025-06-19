@@ -2,7 +2,7 @@
 @Author: Conghao Wong
 @Date: 2024-11-05 15:47:04
 @LastEditors: Conghao Wong
-@LastEditTime: 2025-01-13 17:52:38
+@LastEditTime: 2025-06-19 09:36:31
 @Github: https://cocoon2wong.github.io
 @Copyright 2024 Conghao Wong, All Rights Reserved.
 """
@@ -263,14 +263,14 @@ class PlaygroundManager(BaseManager):
         self.inputs = inputs
         self.outputs = move_to_device(outputs, self.t.device_cpu)
 
+        if not save_results:
+            return self.outputs[0]
+
+        # Save results into an `Agent` object
         # Print model outputs
         time = int(1000 * self.t.model.inference_times[-1])
         self.log(f'Running done. Time cost = {time} ms.')
 
-        if not save_results:
-            return None
-
-        # Save results into an `Agent` object
         _agent = Agent().load_data(
             deepcopy(self.agents[self.agent_index].zip_data())
         )
@@ -295,7 +295,7 @@ class PlaygroundManager(BaseManager):
 
         # Destory the temp agent
         del _agent
-        return None
+        return self.outputs[0]
 
     def get_random_id(self):
         try:

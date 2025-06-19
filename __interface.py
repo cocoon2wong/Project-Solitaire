@@ -2,7 +2,7 @@
 @Author: Conghao Wong
 @Date: 2025-01-02 20:39:07
 @LastEditors: Conghao Wong
-@LastEditTime: 2025-01-13 20:56:37
+@LastEditTime: 2025-06-19 16:08:21
 @Github: https://cocoon2wong.github.io
 @Copyright 2025 Conghao Wong, All Rights Reserved.
 """
@@ -23,6 +23,7 @@ from qpid.utils import dir_check
 
 from .__constant import LOG_PATH
 from .__playgroundManager import PlaygroundManager
+from .__socialMod import compute_social_mod
 from .__ui import Ui_Dialog, Ui_MainWindow
 
 
@@ -91,7 +92,7 @@ class DatasetDialog(QDialog, Ui_Dialog, BaseManager):
         if new_args != old_args:
             sys.argv = [i for i in new_args.split(' ') if len(i)]
             need_restart = True
-        
+
         if need_restart:
             self.manager.change_dataset()
 
@@ -158,6 +159,19 @@ class MainWindow(QMainWindow, Ui_MainWindow, BaseManager):
             (self.pushButton_clear.hide(),
              self.pushButton_runwithoutneighbors.hide())
         ))
+
+        if not self.p.pg_args.compute_social_mod:
+            self.pushButton_socialmod.hide()
+        else:
+            self.pushButton_socialmod.clicked.connect(
+                lambda: compute_social_mod(
+                    manager=self.p,
+                    vars=self.p.vars,
+                    run_func=lambda neighbor: self.p.run(
+                        with_manual_neighbor=neighbor,
+                        save_results=False,
+                    )
+                ))
 
         self.p.visit_all_vars()
 

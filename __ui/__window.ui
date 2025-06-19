@@ -260,6 +260,13 @@ border-bottom-color: rgb(0, 0, 0);</string>
           </widget>
          </item>
          <item>
+          <widget class="MyButton" name="pushButton_socialmod">
+           <property name="text">
+            <string>Compute Social Modifications</string>
+           </property>
+          </widget>
+         </item>
+         <item>
           <widget class="QLabel" name="label_bootargs_title">
            <property name="font">
             <font>
