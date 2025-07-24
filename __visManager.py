@@ -2,7 +2,7 @@
 @Author: Conghao Wong
 @Date: 2024-11-05 15:48:10
 @LastEditors: Conghao Wong
-@LastEditTime: 2025-06-17 21:18:00
+@LastEditTime: 2025-07-23 14:40:54
 @Github: https://cocoon2wong.github.io
 @Copyright 2024 Conghao Wong, All Rights Reserved.
 """
@@ -34,6 +34,7 @@ class VisManager(BaseManager):
 
         # Args
         self.pg_args = self.args.register_subargs(PlaygroundArgs, 'pg_args')
+        self.vis_args = self.args.register_subargs(vis.VisArgs, 'vis_args')
 
         # Image containers
         self.image: QtGui.QImage | None = None
@@ -55,6 +56,9 @@ class VisManager(BaseManager):
         self.hover_marker_id: int | None = None
 
         # Init methods
+        if self.vis_args.draw_with_plt:
+            self.draw_mode_count += 1
+            
         self.switch_draw_mode()
 
         # Set colors and labels of manual points
