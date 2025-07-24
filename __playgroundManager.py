@@ -2,7 +2,7 @@
 @Author: Conghao Wong
 @Date: 2024-11-05 15:47:04
 @LastEditors: Conghao Wong
-@LastEditTime: 2025-06-19 09:36:31
+@LastEditTime: 2025-07-23 14:47:08
 @Github: https://cocoon2wong.github.io
 @Copyright 2024 Conghao Wong, All Rights Reserved.
 """
@@ -46,7 +46,7 @@ class PlaygroundManager(BaseManager):
 
         self.vars: dict[str, Any] = {}
 
-        self.update_var('agent_id', '0')
+        self.update_var('agent_id', str(self.pg_args.default_agent))
         self.update_var('model_path', self.args.load)
 
         self.update_var('Dataset', self.args.dataset)

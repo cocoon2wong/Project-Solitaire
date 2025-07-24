@@ -2,7 +2,7 @@
 @Author: Conghao Wong
 @Date: 2024-11-05 15:39:57
 @LastEditors: Conghao Wong
-@LastEditTime: 2025-06-19 16:06:53
+@LastEditTime: 2025-07-24 10:30:06
 @Github: https://cocoon2wong.github.io
 @Copyright 2024 Conghao Wong, All Rights Reserved.
 """
@@ -72,10 +72,17 @@ class PlaygroundArgs(EmptyArgs):
         (bool) Choose whether to enable the computing of social modifications.
         """
         return self._arg('compute_social_mod', 0, argtype=TEMPORARY)
-    
+
     @property
     def show_manual_neighbor_boxes(self) -> int:
         return self._arg('show_manual_neighbor_boxes', 0, argtype=TEMPORARY)
+
+    @property
+    def default_agent(self) -> int:
+        """
+        Set the default index of agent to be predicted.
+        """
+        return self._arg('default_agent', 0, argtype=TEMPORARY)
 
 
 def args(model_path: str):
