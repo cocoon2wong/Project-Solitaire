@@ -2,7 +2,7 @@
 @Author: Conghao Wong
 @Date: 2024-11-05 15:39:57
 @LastEditors: Conghao Wong
-@LastEditTime: 2025-07-24 10:30:06
+@LastEditTime: 2026-03-30 10:52:33
 @Github: https://cocoon2wong.github.io
 @Copyright 2024 Conghao Wong, All Rights Reserved.
 """
@@ -83,6 +83,14 @@ class PlaygroundArgs(EmptyArgs):
         Set the default index of agent to be predicted.
         """
         return self._arg('default_agent', 0, argtype=TEMPORARY)
+
+    @property
+    def predict_all_neighbors(self) -> int:
+        """
+        (bool) Controls whether to predict trajectories for all other neighbors
+        in the prediction scene.
+        """
+        return self._arg('predict_all_neighbors', 0, argtype=TEMPORARY)
 
 
 def args(model_path: str):

@@ -2,7 +2,7 @@
 @Author: Conghao Wong
 @Date: 2024-11-05 15:47:04
 @LastEditors: Conghao Wong
-@LastEditTime: 2025-07-23 14:47:08
+@LastEditTime: 2026-03-30 10:52:08
 @Github: https://cocoon2wong.github.io
 @Copyright 2024 Conghao Wong, All Rights Reserved.
 """
@@ -255,12 +255,58 @@ class PlaygroundManager(BaseManager):
                          level='warning')
                 raise NotImplementedError
 
+        original_inputs = deepcopy(inputs)
+
+        # Check whether to forecast trajectories for all neighbors
+        if self.pg_args.predict_all_neighbors:
+            # -> (1, max_nei, obs, dim)
+            all_nei = self.t.model.get_input(inputs, INPUT_TYPES.NEIGHBOR_TRAJ)
+
+            # Filter valid neighbors -> (nei, obs, dim)
+            valid_mask = get_mask(torch.abs(all_nei).sum([-1, -2]))
+            valid_idx = torch.where(valid_mask.bool())
+            current_nei = all_nei[valid_idx]
+
+            obs_idx = self.t.model.input_types.index(INPUT_TYPES.OBSERVED_TRAJ)
+            nei_idx = self.t.model.input_types.index(INPUT_TYPES.NEIGHBOR_TRAJ)
+
+            _ego_obs = inputs[obs_idx][0]
+
+            for _nei in current_nei:
+                _nei_obs = (_nei + _ego_obs[-1:, :])[None]
+
+                if torch.sum(torch.abs(_nei_obs - _ego_obs)) < 1e-4:
+                    continue
+
+                for _idx in range(len(inputs)):
+                    if _idx == obs_idx:
+                        inputs[_idx] = torch.concat([
+                            inputs[_idx],
+                            _nei_obs,
+                        ], dim=0)
+
+                    elif _idx == nei_idx:
+                        inputs[_idx] = torch.concat([
+                            inputs[_idx],
+                            inputs[_idx][:1] + inputs[obs_idx][:1, None, :, :],
+                        ], dim=0)
+
+                    else:
+                        inputs[_idx] = torch.concat([
+                            inputs[_idx],
+                            inputs[_idx][:1],
+                        ], dim=0)
+
         # Forward the model
         with torch.no_grad():
             outputs = self.t.model.implement(inputs, training=None)
 
+        if self.pg_args.predict_all_neighbors:
+            # Resort outputs
+            outputs[0] = outputs[0][None]
+
         # Save model inputs/outputs
-        self.inputs = inputs
+        self.inputs = original_inputs
         self.outputs = move_to_device(outputs, self.t.device_cpu)
 
         if not save_results:
