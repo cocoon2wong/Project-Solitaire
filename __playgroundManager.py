@@ -2,7 +2,7 @@
 @Author: Conghao Wong
 @Date: 2024-11-05 15:47:04
 @LastEditors: Conghao Wong
-@LastEditTime: 2026-03-30 10:52:08
+@LastEditTime: 2026-03-30 21:13:14
 @Github: https://cocoon2wong.github.io
 @Copyright 2024 Conghao Wong, All Rights Reserved.
 """
@@ -259,36 +259,35 @@ class PlaygroundManager(BaseManager):
 
         # Check whether to forecast trajectories for all neighbors
         if self.pg_args.predict_all_neighbors:
-            # -> (1, max_nei, obs, dim)
+            # -> (1, obs, dim)
+            ego_obs = self.t.model.get_input(inputs, INPUT_TYPES.OBSERVED_TRAJ)
+
+            # abs_nei: (1, max_nei, obs, dim)
             all_nei = self.t.model.get_input(inputs, INPUT_TYPES.NEIGHBOR_TRAJ)
+            abs_nei = all_nei + ego_obs[:, None, -1:, :]
 
             # Filter valid neighbors -> (nei, obs, dim)
-            valid_mask = get_mask(torch.abs(all_nei).sum([-1, -2]))
+            valid_mask = get_mask(torch.abs(abs_nei).sum([-1, -2]))
             valid_idx = torch.where(valid_mask.bool())
-            current_nei = all_nei[valid_idx]
+            valid_abs_nei = abs_nei[valid_idx]
 
             obs_idx = self.t.model.input_types.index(INPUT_TYPES.OBSERVED_TRAJ)
             nei_idx = self.t.model.input_types.index(INPUT_TYPES.NEIGHBOR_TRAJ)
 
-            _ego_obs = inputs[obs_idx][0]
-
-            for _nei in current_nei:
-                _nei_obs = (_nei + _ego_obs[-1:, :])[None]
-
-                if torch.sum(torch.abs(_nei_obs - _ego_obs)) < 1e-4:
-                    continue
+            # Make new inputs
+            for _id, _new_ego in enumerate(valid_abs_nei):
 
                 for _idx in range(len(inputs)):
-                    if _idx == obs_idx:
+                    if _idx == obs_idx:  # obs
                         inputs[_idx] = torch.concat([
                             inputs[_idx],
-                            _nei_obs,
+                            _new_ego[None],
                         ], dim=0)
 
-                    elif _idx == nei_idx:
+                    elif _idx == nei_idx:   # new nei
                         inputs[_idx] = torch.concat([
                             inputs[_idx],
-                            inputs[_idx][:1] + inputs[obs_idx][:1, None, :, :],
+                            abs_nei - _new_ego[None, None, -1:, :],
                         ], dim=0)
 
                     else:
@@ -296,6 +295,10 @@ class PlaygroundManager(BaseManager):
                             inputs[_idx],
                             inputs[_idx][:1],
                         ], dim=0)
+
+            # Sort inputs to remove same egos
+            for _idx in range(len(inputs)):
+                inputs[_idx] = inputs[_idx][1:]
 
         # Forward the model
         with torch.no_grad():
