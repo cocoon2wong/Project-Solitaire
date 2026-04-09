@@ -262,14 +262,21 @@ class PlaygroundManager(BaseManager):
             # -> (1, obs, dim)
             ego_obs = self.t.model.get_input(inputs, INPUT_TYPES.OBSERVED_TRAJ)
 
-            # abs_nei: (1, max_nei, obs, dim)
+            # -> (1, max_nei, obs, dim)
             all_nei = self.t.model.get_input(inputs, INPUT_TYPES.NEIGHBOR_TRAJ)
             abs_nei = all_nei + ego_obs[:, None, -1:, :]
 
             # Filter valid neighbors -> (nei, obs, dim)
-            valid_mask = get_mask(torch.abs(abs_nei).sum([-1, -2]))
+            valid_mask = get_mask(torch.abs(all_nei).sum([-1, -2]))
             valid_idx = torch.where(valid_mask.bool())
-            valid_abs_nei = abs_nei[valid_idx]
+            valid_nei = all_nei[valid_idx]
+
+            # Resort neighbors according to distance
+            d = torch.norm(valid_nei[..., -1, :], p=2, dim=-1)
+            valid_nei = valid_nei[d.argsort(dim=-1)]
+
+            # Move back neighbors' trajectories
+            valid_abs_nei = valid_nei + ego_obs[:, -1:, :]
 
             obs_idx = self.t.model.input_types.index(INPUT_TYPES.OBSERVED_TRAJ)
             nei_idx = self.t.model.input_types.index(INPUT_TYPES.NEIGHBOR_TRAJ)
